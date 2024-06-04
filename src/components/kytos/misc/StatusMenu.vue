@@ -2,7 +2,7 @@
 <k-toolbar-item icon="signal" tooltip="Status Menu">
   <div class="k-status-menu">
     <div class="k-status-title">
-      <icon name="signal"></icon>
+      <icon :icon="signal"></icon>
       <div class="panel-title">
         <h1> Status Menu </h1>
       </div>
@@ -11,7 +11,7 @@
       <k-accordion>
         <!-- Refresh Menu Button: Makes new API requests -->
         <k-accordion-item title="Refresh">
-          <k-button icon="redo" title="Refresh" tooltip="Refresh" v-on:click.native="refresh()"></k-button>
+          <k-button icon="redo" title="Refresh" tooltip="Refresh" @click="refresh()"></k-button>
         </k-accordion-item>
         <!--
           Sections/Tables:
@@ -24,9 +24,9 @@
             <k-accordion-item title="Filters">
               <k-button-group>
                 <!-- Normal API Data -->
-                <k-button :class="selectedSwitchData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" v-on:click.native="changeSwitchData('ORIGINAL')"></k-button>
+                <k-button :class="selectedSwitchData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" @click="changeSwitchData('ORIGINAL')"></k-button>
                 <!-- Data that was pre selected by user -->
-                <k-button :class="selectedSwitchData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" v-on:click.native="changeSwitchData('PRE_SELECTED')"></k-button>
+                <k-button :class="selectedSwitchData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" @click="changeSwitchData('PRE_SELECTED')"></k-button>
               </k-button-group>
             </k-accordion-item>
             <div class="data_status_table">
@@ -61,10 +61,10 @@
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in filtered_switchData" :key="item.dpid">
-                      <td><k-button class="statusTableButton" :icon="isStoredS(item, index)" v-on:click.native="add_remove_Switches(item, index)"></k-button></td>
-                      <td v-on:click="show_infoPanel(item.dpid)">{{item.name}}</td>
+                      <td><k-button class="statusTableButton" :icon="isStoredS(item, index)" @click="add_remove_Switches(item, index)"></k-button></td>
+                      <td @click="show_infoPanel(item.dpid)">{{item.name}}</td>
                       <td :class="statusColor(item)">{{item.status}}</td>
-                      <td>{{item.status_reason | splitStatusReasons}}</td>
+                      <td>{{splitStatusReasons(item.status_reason)}}</td>
                       <td>{{item.enabled}}</td>
                       <td>{{item.active}}</td>
                     </tr>
@@ -75,8 +75,8 @@
           <k-accordion-item title="Links">
             <k-accordion-item title="Filters">
             <k-button-group>
-              <k-button :class="selectedLinkData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" v-on:click.native="changeLinkData('ORIGINAL')"></k-button>
-              <k-button :class="selectedLinkData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" v-on:click.native="changeLinkData('PRE_SELECTED')"></k-button>
+              <k-button :class="selectedLinkData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" @click="changeLinkData('ORIGINAL')"></k-button>
+              <k-button :class="selectedLinkData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" @click="changeLinkData('PRE_SELECTED')"></k-button>
               </k-button-group>
             </k-accordion-item>
             <div class="data_status_table">
@@ -110,10 +110,10 @@
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in filtered_linkData" :key="item.id" @click="show_infoPanelLink(item.id)">
-                      <td><k-button class="statusTableButton" :icon="isStoredL(item, index)" v-on:click.native="add_remove_Links(item, index)"></k-button></td>
+                      <td><k-button class="statusTableButton" :icon="isStoredL(item, index)" @click="add_remove_Links(item, index)"></k-button></td>
                       <td>{{item.name}}</td>
                       <td :class="statusColor(item)">{{item.status}}</td>
-                      <td>{{item.status_reason | splitStatusReasons}}</td>
+                      <td>{{splitStatusReasons(item.status_reason)}}</td>
                       <td>{{item.enabled}}</td>
                       <td>{{item.active}}</td>
                     </tr>
@@ -124,8 +124,8 @@
           <k-accordion-item title="Interfaces">
             <k-accordion-item title="Filters">
             <k-button-group>
-              <k-button :class="selectedInterfaceData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" v-on:click.native="changeInterfaceData('ORIGINAL')"></k-button>
-              <k-button :class="selectedInterfaceData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" v-on:click.native="changeInterfaceData('PRE_SELECTED')"></k-button>
+              <k-button :class="selectedInterfaceData('ORIGINAL')" icon="database" title="Show-All" tooltip="Show-All" @click="changeInterfaceData('ORIGINAL')"></k-button>
+              <k-button :class="selectedInterfaceData('PRE_SELECTED')" icon="clipboard-check" title="Show-Selected" tooltip="Show-Selected" @click="changeInterfaceData('PRE_SELECTED')"></k-button>
               </k-button-group>
             </k-accordion-item>
             <div class="data_status_table">
@@ -163,11 +163,11 @@
                   </thead> 
                   <tbody>
                     <tr v-for="(item, index) in filtered_interfaceData" :key="item.id" @click="show_infoPanelInterface(item.id)">
-                      <td><k-button class="statusTableButton" :icon="isStoredI(item, index)" v-on:click.native="add_remove_Interfaces(item, index)"></k-button></td>
+                      <td><k-button class="statusTableButton" :icon="isStoredI(item, index)" @click="add_remove_Interfaces(item, index)"></k-button></td>
                       <td>{{item.switch}}</td>
                       <td>{{item.port}}</td>
                       <td :class="statusColor(item)">{{item.status}}</td>
-                      <td>{{item.status_reason | splitStatusReasons}}</td>
+                      <td>{{splitStatusReasons(item.status_reason)}}</td>
                       <td>{{item.enabled}}</td>
                       <td>{{item.active}}</td>           
                     </tr>
@@ -318,7 +318,7 @@ export default {
                      icon: "cog",
                      title: "Switch Details",
                      subtitle: this.switches[s].connection}
-      this.$kytos.$emit("showInfoPanel", content)
+      this.$kytos.eventBus.$emit("showInfoPanel", content)
     },
     show_infoPanelLink(l) {
       /**
@@ -340,7 +340,7 @@ export default {
                      icon: "cog",
                      title: "Link Details",
                      subtitle: subtitle}
-      this.$kytos.$emit("showInfoPanel", content)
+      this.$kytos.eventBus.$emit("showInfoPanel", content)
     },
     show_infoPanelInterface(i) {
       /**
@@ -353,7 +353,7 @@ export default {
                      icon: "cog",
                      title: "Interface Details",
                      subtitle: i}
-      this.$kytos.$emit("showInfoPanel", content)
+      this.$kytos.eventBus.$emit("showInfoPanel", content)
     },
     /**
      * @param {string} data - The name of the selected data.
@@ -431,8 +431,12 @@ export default {
              title: 'Could not retrieve topology',
              description: data.status.toString()
         }
-        self.$kytos.$emit("setNotification", notification)
+        self.$kytos.eventBus.$emit("setNotification", notification)
       });
+    },
+    //Formats status reason data for table
+    splitStatusReasons(statusReasons) {
+      return statusReasons.toString()
     }
  },
   computed: {
@@ -511,16 +515,18 @@ export default {
     filtered_switchData: function() {
       var current_data = {}
       var updater = this.change
+      console.log(this.switchData)
+      console.log(this.$kytos.toRaw(this.switchData))
       //Selects Data to filter from selectedSwitches.
       switch(this.currentSwitchData) {
         case "ORIGINAL":
-          current_data = structuredClone(this.switchData)
+          current_data = structuredClone(this.$kytos.toRaw(this.switchData))
           break;
         case "PRE_SELECTED":
-          current_data = structuredClone(this.selectedSwitches)
+          current_data = structuredClone(this.$kytos.toRaw(this.selectedSwitches))
           break;
         default:
-          current_data = structuredClone(this.switchData)
+          current_data = structuredClone(this.$kytos.toRaw(this.switchData))
           break;
       }
       //Filters Data based on current textFilter.
@@ -543,13 +549,13 @@ export default {
       //Selects Data to filter from selectedLinks.
       switch(this.currentLinkData) {
         case "ORIGINAL":
-          current_data = structuredClone(this.linkData)
+          current_data = structuredClone(this.$kytos.toRaw(this.linkData))
           break;
         case "PRE_SELECTED":
-          current_data = structuredClone(this.selectedLinks)
+          current_data = structuredClone(this.$kytos.toRaw(this.selectedLinks))
           break;
         default:
-          current_data = structuredClone(this.linkData)
+          current_data = structuredClone(this.$kytos.toRaw(this.linkData))
           break;
       }
       //Filters Data based on current textFilter.
@@ -572,13 +578,13 @@ export default {
       //Selects Data to filter from selectedInterfaces.
       switch(this.currentInterfaceData) {
         case "ORIGINAL":
-          current_data = structuredClone(this.interfaceData)
+          current_data = structuredClone(this.$kytos.toRaw(this.interfaceData))
           break;
         case "PRE_SELECTED":
-          current_data = structuredClone(this.selectedInterfaces)
+          current_data = structuredClone(this.$kytos.toRaw(this.selectedInterfaces))
           break;
         default:
-          current_data = structuredClone(this.interfaceData)
+          current_data = structuredClone(this.$kytos.toRaw(this.interfaceData))
           break;
       }
       //Filters Data based on current textFilter.
@@ -667,11 +673,6 @@ export default {
       },
       deep: true
     },
-  },
-  filters: {
-    splitStatusReasons: function(statusReasons) {
-      return statusReasons.toString()
-    }
   }
 }
 
