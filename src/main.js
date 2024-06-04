@@ -42,6 +42,7 @@ import KytosInfoPanel from './components/kytos/misc/InfoPanel.vue';
 import KytosStatusBar from './components/kytos/misc/StatusBar.vue';
 import KytosInput from './components/kytos/inputs/Input.vue';
 import KytosInputAutocomplete from './components/kytos/inputs/InputAutocomplete.vue';
+import KytosStatusMenu from './components/kytos/misc/StatusMenu.vue';
 
 import KytosTextarea from './components/kytos/inputs/Textarea.vue';
 import KytosCheckbox from './components/kytos/inputs/Checkbox.vue';
