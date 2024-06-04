@@ -92,6 +92,7 @@ kytos.component('k-input-auto', KytosInputAutocomplete);
 kytos.component('k-textarea', KytosTextarea);
 kytos.component('k-checkbox', KytosCheckbox);
 kytos.component('k-status-bar', KytosStatusBar);
+kytos.component('k-status-menu', KytosStatusMenu);
 
 kytos.component('k-select', KytosSelect)
 kytos.component('k-slider', KytosSlider);
