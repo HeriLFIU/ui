@@ -1,102 +1,108 @@
 <template>
-    <k-accordion>
-      <div class="button_container">
-        <k-button tooltip="Go back to switch info" title="< Back to switch" @click="back_switch"></k-button>
-        <k-button @click="bt_state_toggle" :title="next_state"></k-button>
+  <k-accordion>
+    <div class="button_container">
+      <k-button tooltip="Go back to switch info" title="< Back to switch" @click="back_switch"></k-button>
+      <k-button @click="bt_state_toggle" title="next_state"></k-button>
+    </div>
+    <k-modal
+      :message="modal_state_toggle_message"
+      :button-title="next_state"
+      :action="state_toggle_interface"
+      v-model:show-modal="show_modal_state_toggle">
+    </k-modal>
+    <k-accordion-item title="Interface Plot" v-if="chartJsonData">
+      <k-button-group>
+          <!-- input type="text" class="k-input" placeholder="Zoom" disabled -->
+          <k-button title="5" tooltip="5 minutes" @click="change_plotRange(5)"></k-button>
+          <k-button title="10" tooltip="10 minutes" @click="change_plotRange(10)"></k-button>
+          <k-button title="15" tooltip="15 minutes" @click="change_plotRange(15)"></k-button>
+          <k-button title="60" tooltip="60 minutes" @click="change_plotRange(60)"></k-button>
+          <k-button title="120" tooltip="120 minutes" @click="change_plotRange(120)"></k-button>
+        </k-button-group>
+      <k-chart-timeseries :interface_id="metadata.interface_id" :jsonData="chartJsonData" :display_legend="true" :chartHeight="200" ></k-chart-timeseries>
+    </k-accordion-item>
+
+    <k-accordion-item title="Basic Details">
+        <k-property-panel>
+          <template v-if="content"> 
+            <k-property-panel-item :name="key" :value="value" :key="key" v-for="(value, key) in this.metadata"></k-property-panel-item>
+          </template>
+        </k-property-panel>
+    </k-accordion-item>
+    <k-accordion-item title="Available Tags">
+      <div class="metadata_table">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Value Ranges</th>  
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(value, key) in this.available_tags">
+              <td >{{key}}</td>
+              <td style="text-align: left;">{{value}}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <k-accordion-item title="Interface Plot" v-if="chartJsonData">
-        <k-button-group>
-            <!-- input type="text" class="k-input" placeholder="Zoom" disabled -->
-            <k-button title="5" tooltip="5 minutes" @click="change_plotRange(5)"></k-button>
-            <k-button title="10" tooltip="10 minutes" @click="change_plotRange(10)"></k-button>
-            <k-button title="15" tooltip="15 minutes" @click="change_plotRange(15)"></k-button>
-            <k-button title="60" tooltip="60 minutes" @click="change_plotRange(60)"></k-button>
-            <k-button title="120" tooltip="120 minutes" @click="change_plotRange(120)"></k-button>
-          </k-button-group>
-        <k-chart-timeseries :interface_id="metadata.interface_id" :jsonData="chartJsonData" :display_legend="true" :chartHeight="200" ></k-chart-timeseries>
-      </k-accordion-item>
-
-      <k-accordion-item title="Basic Details">
-          <k-property-panel>
-            <template v-if="content"> 
-              <k-property-panel-item :name="key" :value="value" :key="key" v-for="(value, key) in this.metadata"></k-property-panel-item>
-            </template>
-          </k-property-panel>
-      </k-accordion-item>
-      <k-accordion-item title="Available Tags">
-        <div class="metadata_table">
+    </k-accordion-item>
+    <k-accordion-item title="Tag ranges">
+      <div class="metadata_table">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Value Ranges</th>  
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(value, key) in this.tag_ranges">
+              <td >{{key}}</td>
+              <td style="text-align: left;">{{value}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="color:#ccc;text-align: center;"> Set tag_ranges </div>
+      <div class="metric">
+        <k-dropdown title="Tag type" :options="get_tag_types()" v-model:value ="new_tag_type"></k-dropdown>
+      </div>
+      <k-textarea title="Set tag_ranges" icon="arrow-right" placeholder="Eg. [[100, 200], [400, 4095]]" v-model:value="new_tag_ranges"></k-textarea>
+      <div class="metadata_container">
+        <k-button title="Set tag_ranges" @click="set_tag_ranges"></k-button>
+      </div>
+    </k-accordion-item>
+    <k-accordion-item title="Metadata" v-if="Object.keys(this.metadata_items).length !== 0">
+       <div class="metadata_table">
           <table>
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Value Ranges</th>  
+                <th>Key</th>
+                <th>Value</th>  
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(value, key) in this.available_tags">
+              <tr v-for="(value, key) in this.metadata_items">
                 <td >{{key}}</td>
-                <td style="text-align: left;">{{value}}</td>
+                <td >{{value}}</td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </k-accordion-item>
-      <k-accordion-item title="Tag ranges">
-        <div class="metadata_table">
-          <table>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Value Ranges</th>  
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(value, key) in this.tag_ranges">
-                <td >{{key}}</td>
-                <td style="text-align: left;">{{value}}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div style="color:#ccc;text-align: center;"> Set tag_ranges </div>
-        <div class="metric">
-          <k-dropdown title="Tag type" :options="get_tag_types()" v-model:value ="new_tag_type"></k-dropdown>
-        </div>
-        <k-textarea title="Set tag_ranges" icon="arrow-right" placeholder="Eg. [[100, 200], [400, 4095]]" v-model:value="new_tag_ranges"></k-textarea>
-        <div class="metadata_container">
-          <k-button title="Set tag_ranges" @click="set_tag_ranges"></k-button>
-        </div>
-      </k-accordion-item>
-      <k-accordion-item title="Metadata" v-if="Object.keys(this.metadata_items).length !== 0">
-         <div class="metadata_table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Key</th>
-                  <th>Value</th>  
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(value, key) in this.metadata_items">
-                  <td >{{key}}</td>
-                  <td >{{value}}</td>
-                </tr>
-              </tbody>
-            </table>
-         </div>
-      </k-accordion-item>
-      <k-accordion-item title="Metadata actions"> 
-         <k-textarea title="Add metadata" icon="arrow-right" placeholder='Eg. {"node_name": "some_name", "address": "some_address"}' v-model:value="to_add"></k-textarea>
-         <div class="metadata_container">
-              <k-button title="Add metadata" @click="bt_add_metadata"></k-button>
-         </div>
-         <k-input title="Delete metadata" icon="arrow-right" placeholder="Eg. node_name" v-model:value="to_delete"></k-input>
-         <div class="metadata_container">
-              <k-button title="Remove metadata" @click="bt_rmv_metadata"></k-button>
-         </div>
-      </k-accordion-item>
+       </div>
+    </k-accordion-item>
+    <k-accordion-item title="Metadata actions"> 
+       <k-textarea title="Add metadata" icon="arrow-right" placeholder='Eg. {"node_name": "some_name", "address": "some_address"}' v-model:value="to_add"></k-textarea>
+       <div class="metadata_container">
+            <k-button title="Add metadata" @click="bt_add_metadata"></k-button>
+       </div>
+       <k-input title="Delete metadata" icon="arrow-right" placeholder="Eg. node_name" v-model:value="to_delete"></k-input>
+       <div class="metadata_container">
+            <k-button title="Remove metadata" @click="bt_rmv_metadata"></k-button>
+       </div>
+    </k-accordion-item>
 
-    </k-accordion>
+  </k-accordion>
 </template>
 
 <script>
@@ -104,297 +110,303 @@ import KytosBaseWithIcon from "../components/kytos/base/KytosBaseWithIcon"
 import {json} from "d3-request"
 
 export default {
-  name: 'k-interface-info',
-  mixins: [KytosBaseWithIcon],
-  props: ["content"],
-  data () {
-    return {
-      display: false,
-      metadata_items: [],
-      metadata: {"enabled": "",
-                 "active": "",
-                 "interface_id": "",
-                 "name": "",
-                 "port_number": "",
-                 "dpid": "",
-                 "mac": "",
-                 "speed": "",
-                 "lldp": "",
-                 "nni": "",
-                 "uni": "",},
-      chartJsonData: null,
-      interval: null,
-      plotRange: null,
-      next_state: "",
-      to_add: "",
-      to_delete: "",
-      new_tag_ranges: "",
-      new_tag_type: "",
-      tag_ranges: {},
-      available_tags: {},
-      content_switch: []
-    }
+name: 'k-interface-info',
+mixins: [KytosBaseWithIcon],
+props: ["content"],
+data () {
+  return {
+    display: false,
+    metadata_items: [],
+    metadata: {"enabled": "",
+               "active": "",
+               "interface_id": "",
+               "name": "",
+               "port_number": "",
+               "dpid": "",
+               "mac": "",
+               "speed": "",
+               "lldp": "",
+               "nni": "",
+               "uni": "",},
+    chartJsonData: null,
+    interval: null,
+    plotRange: null,
+    next_state: "",
+    to_add: "",
+    to_delete: "",
+    new_tag_ranges: "",
+    new_tag_type: "",
+    tag_ranges: {},
+    available_tags: {},
+    show_modal_state_toggle: false,
+    content_switch: []
+  }
+},
+computed: {
+  endpoint () {
+    // TODO: of_stats/kronos must implement the endpoint
+    //let url = this.$kytos_server_api + "kytos/of_stats/v1/"
+    //return url + this.metadata.dpid + "/ports/" + this.metadata.port_number
   },
-  computed: {
-    endpoint () {
-      // TODO: of_stats/kronos must implement the endpoint
-      //let url = this.$kytos_server_api + "kytos/of_stats/v1/"
-      //return url + this.metadata.dpid + "/ports/" + this.metadata.port_number
-    }
+  modal_state_toggle_message() {
+     return `${this.next_state} Interface ${this.metadata_items.port_name !== undefined && this.metadata_items.port_name.length !== 0 ? '"' + this.metadata_items.port_name + '"' : this.metadata.interface_id}?`
   },
-  methods: {
-    update_interface_content: function() {
-      var self = this
-      let filter = this.$filters.humanize_bytes      
-      Object.keys(this.metadata).forEach(function (key) {
-        let value = self.content[key]
-        if (key == 'speed') {
-          value = (value === null) ? 'Unavailable' : filter(value * 8)
-        }
-        self.metadata[key] = String(value)
-      });
-    },
-    parseInterfaceData: function(data) {
-      if (!data) {
-        var msg = "Error while trying to fetch interface data."
-        this.$kytos.eventBus.$emit('statusMessage', msg, true)
-      } else {
-        this.chartJsonData = data["data"]
+},
+methods: {
+  update_interface_content: function() {
+    var self = this
+    let filter = this.$filters.humanize_bytes      
+    Object.keys(this.metadata).forEach(function (key) {
+      let value = self.content[key]
+      if (key == 'speed') {
+        value = (value === null) ? 'Unavailable' : filter(value * 8)
       }
-    },
-    build_url: function() {
-        var parameters_url = "";
-        if (this.plotRange !== null) {
-            var unix = Math.round(+new Date()/1000);
-            var start = unix - (this.plotRange * 60);
-            parameters_url = parameters_url + "?start=" + start + "&end=" + unix;
-        }
-        var endpoint_url = this.endpoint + parameters_url;
-        return endpoint_url;
-    },
-    update_chart: function() {
-        // TODO: of_stats/kronos must implement the endpoint
-        //json(this.build_url(), this.parseInterfaceData)
-    },
-    change_plotRange: function(range) {
-        this.plotRange = range
-        this.update_chart()
-    },
-    update_content_switch: function() {
-      if(this.content === undefined) return
-      this.content_switch = this.content["content_switch"]
-    },
-    back_switch: function() {
-      let panel_content = {component: 'kytos-topology-k-info-panel-switch_info',
-                           content: this.content_switch,
-                           icon: "cog",
-                           title: "Switch Details",
-                           subtitle: this.content_switch.connection,}
-      this.$kytos.eventBus.$emit("showInfoPanel", panel_content)
-    },
-    get_metadata: function() {
-      if(this.content === undefined) return
-      this.metadata_items = this.content.metadata
-    },
-    get_next_state: function() {
-      this.next_state = this.metadata.enabled == 'true'? 'Disable' : 'Enable'
-    },
-    bt_state_toggle: function() {
-      var _this = this
-      let request = $.ajax({
-                       type:"POST",
-                       url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
-                             + "/" + this.next_state.toLowerCase(),
-                       async: true,});
-      request.done(function() {
-        let notification = {
-          title: 'Interface ' + _this.next_state + 'd: Succeed',
-          description: 'The interface ' + _this.metadata.interface_id + ' was ' + _this.next_state.toLowerCase() + 'd.',
-          icon: 'cog',
-        }
-        _this.next_state = _this.next_state == 'Enable'? 'Disable' : 'Enable'
-        _this.content['enabled'] = _this.next_state == 'Enable'? 'false' : 'true'
-        _this.metadata['enabled'] = _this.content['enabled']
-        _this.$kytos.eventBus.$emit("setNotification", notification)
-      });
-      request.fail(function(data) {
-        let notification = {
-          title: 'Interface ' + _this.next_state + 'd: Failed',
-          description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + '. The interface ' + _this.metadata.interface_id + ' was not ' + _this.next_state.toLowerCase() + 'd.',
-          icon: 'cog',
-        }
-        _this.$kytos.eventBus.$emit("setNotification", notification)
+      self.metadata[key] = String(value)
+    });
+  },
+  parseInterfaceData: function(data) {
+    if (!data) {
+      var msg = "Error while trying to fetch interface data."
+      this.$kytos.eventBus.$emit('statusMessage', msg, true)
+    } else {
+      this.chartJsonData = data["data"]
+    }
+  },
+  build_url: function() {
+      var parameters_url = "";
+      if (this.plotRange !== null) {
+          var unix = Math.round(+new Date()/1000);
+          var start = unix - (this.plotRange * 60);
+          parameters_url = parameters_url + "?start=" + start + "&end=" + unix;
+      }
+      var endpoint_url = this.endpoint + parameters_url;
+      return endpoint_url;
+  },
+  update_chart: function() {
+      // TODO: of_stats/kronos must implement the endpoint
+      //json(this.build_url(), this.parseInterfaceData)
+  },
+  change_plotRange: function(range) {
+      this.plotRange = range
+      this.update_chart()
+  },
+  update_content_switch: function() {
+    if(this.content === undefined) return
+    this.content_switch = this.content["content_switch"]
+  },
+  back_switch: function() {
+    let panel_content = {component: 'kytos-topology-k-info-panel-switch_info',
+                         content: this.content_switch,
+                         icon: "cog",
+                         title: "Switch Details",
+                         subtitle: this.content_switch.connection,}
+    this.$kytos.eventBus.$emit("showInfoPanel", panel_content)
+  },
+  get_metadata: function() {
+    if(this.content === undefined) return
+    this.metadata_items = this.content.metadata
+  },
+  get_next_state: function() {
+    this.next_state = this.metadata.enabled == 'true'? 'Disable' : 'Enable'
+  },
+  bt_state_toggle: function() {
+    this.show_modal_state_toggle = true;
+  },
+  state_toggle_interface(){
+    var _this = this
+    let request = $.ajax({
+                     type:"POST",
+                     url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
+                           + "/" + this.next_state.toLowerCase(),
+                     async: true,});
+    request.done(function() {
+      let notification = {
+        title: 'Interface ' + _this.next_state + 'd: Succeed',
+        description: 'The interface ' + _this.metadata.interface_id + ' was ' + _this.next_state.toLowerCase() + 'd.',
+        icon: 'cog',
+      }
+      _this.next_state = _this.next_state == 'Enable'? 'Disable' : 'Enable'
+      _this.metadata['enabled'] = _this.next_state == 'Enable'? 'false' : 'true'
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+    });
+    request.fail(function(data) {
+      let notification = {
+        title: 'Interface ' + _this.next_state + 'd: Failed',
+        description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + '. The interface ' + _this.metadata.interface_id + ' was not ' + _this.next_state.toLowerCase() + 'd.',
+        icon: 'cog',
+      }
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+    })
+  },
+  bt_add_metadata: function() {
+    var _this = this
+    let request = $.ajax({
+                     type: "POST",
+                     url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
+                           + "/metadata",
+                     async: true,
+                     data: this.to_add,
+                     dataType: "json",
+                     contentType: "application/json; charset=utf-8",
+    });
+    request.done(function() {
+      let notification = {
+           icon: 'cog',
+           title: 'Add metadata: Success',
+           description: '"' + _this.to_add + '" was added to the metadata. Interface: ' + _this.metadata.interface_id,
+      }
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+      let temp = JSON.parse(_this.to_add)
+      var item = ""
+      for (item in temp){
+        _this.content.metadata[item] = temp[item]
+      }
+      _this.to_add = ''
+    });
+    request.fail(function(data) {
+      let notification = {
+           icon: 'cog',
+           title: 'Add metadata: Failure',
+           description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "' + _this.to_add + '" was not added to the metadata. Interface: ' + _this.metadata.interface_id,
+      }
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+    });
+  },
+  bt_rmv_metadata: function() {
+    var _this = this
+    let request = $.ajax({
+                     type: "DELETE",
+                     url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
+                           + "/metadata/" + this.to_delete,
+                     async: true,
+    });
+    request.done(function() {
+      let notification = {
+           icon: 'cog',
+           title: 'Delete metadata: Success',
+           description: '"' + _this.to_delete + '" was deleted from the metadata. Interface: ' + _this.metadata.interface_id,
+      }
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+      delete _this.content.metadata[_this.to_delete]
+      _this.to_delete = ''
+    });
+    request.fail(function(data) {
+      let notification = {
+           icon: 'cog',
+           title: 'Delete metadata: Failure',
+           description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "' + _this.to_delete + '" was not deleted from the metadata. Interface: ' + _this.metadata.interface_id,
+      }
+      _this.$kytos.eventBus.$emit("setNotification", notification)
+    });
+  },
+  set_tag_ranges: function() {
+    var _this = this
+    let ranges_list = JSON.parse(this.new_tag_ranges)
+    let payload = {tag_type: this.new_tag_type, tag_ranges: ranges_list}
+    let intf_id = this.metadata.interface_id
+    let api = this.$kytos_server_api
+    let request = $.ajax({
+                     type: "POST",
+                     url: api + "kytos/topology/v3/interfaces/" + intf_id
+                           + "/tag_ranges",
+                     async: true,
+                     data: JSON.stringify(payload),
+                     dataType: "json",
+                     contentType: "application/json; charset=utf-8",
+    })
+    request.done(function() {
+      let new_available_tags = {}
+      let _request = $.ajax({
+                     type: "GET",
+                     url: api + "kytos/topology/v3/interfaces/" + intf_id
+                           + "/tag_ranges",
+                     async: true
       })
-    },
-    bt_add_metadata: function() {
-      var _this = this
-      let request = $.ajax({
-                       type: "POST",
-                       url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
-                             + "/metadata",
-                       async: true,
-                       data: this.to_add,
-                       dataType: "json",
-                       contentType: "application/json; charset=utf-8",
-      });
-      request.done(function() {
+      _request.done(function(data) {
+        new_available_tags = data[intf_id]["available_tags"][_this.new_tag_type]
+        _this.content['tag_ranges'][_this.new_tag_type] = _this.new_tag_ranges
+        _this.content['available_tags'][_this.new_tag_type] = new_available_tags
         let notification = {
-             icon: 'cog',
-             title: 'Add metadata: Success',
-             description: '"' + _this.to_add + '" was added to the metadata. Interface: ' + _this.metadata.interface_id,
-        }
-        _this.$kytos.eventBus.$emit("setNotification", notification)
-        let temp = JSON.parse(_this.to_add)
-        var item = ""
-        for (item in temp){
-          _this.content.metadata[item] = temp[item]
-        }
-        _this.to_add = ''
-      });
-      request.fail(function(data) {
-        let notification = {
-             icon: 'cog',
-             title: 'Add metadata: Failure',
-             description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "' + _this.to_add + '" was not added to the metadata. Interface: ' + _this.metadata.interface_id,
-        }
-        _this.$kytos.eventBus.$emit("setNotification", notification)
-      });
-    },
-    bt_rmv_metadata: function() {
-      var _this = this
-      let request = $.ajax({
-                       type: "DELETE",
-                       url: this.$kytos_server_api + "kytos/topology/v3/interfaces/" + this.metadata.interface_id
-                             + "/metadata/" + this.to_delete,
-                       async: true,
-      });
-      request.done(function() {
-        let notification = {
-             icon: 'cog',
-             title: 'Delete metadata: Success',
-             description: '"' + _this.to_delete + '" was deleted from the metadata. Interface: ' + _this.metadata.interface_id,
-        }
-        _this.$kytos.eventBus.$emit("setNotification", notification)
-        delete _this.content.metadata[_this.to_delete]
-        _this.to_delete = ''
-      });
-      request.fail(function(data) {
-        let notification = {
-             icon: 'cog',
-             title: 'Delete metadata: Failure',
-             description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "' + _this.to_delete + '" was not deleted from the metadata. Interface: ' + _this.metadata.interface_id,
-        }
-        _this.$kytos.eventBus.$emit("setNotification", notification)
-      });
-    },
-    set_tag_ranges: function() {
-      var _this = this
-      let ranges_list = JSON.parse(this.new_tag_ranges)
-      let payload = {tag_type: this.new_tag_type, tag_ranges: ranges_list}
-      let intf_id = this.metadata.interface_id
-      let api = this.$kytos_server_api
-      let request = $.ajax({
-                       type: "POST",
-                       url: api + "kytos/topology/v3/interfaces/" + intf_id
-                             + "/tag_ranges",
-                       async: true,
-                       data: JSON.stringify(payload),
-                       dataType: "json",
-                       contentType: "application/json; charset=utf-8",
-      })
-      request.done(function() {
-        let new_available_tags = {}
-        let _request = $.ajax({
-                       type: "GET",
-                       url: api + "kytos/topology/v3/interfaces/" + intf_id
-                             + "/tag_ranges",
-                       async: true
-        })
-        _request.done(function(data) {
-          new_available_tags = data[intf_id]["available_tags"][_this.new_tag_type]
-          _this.content['tag_ranges'][_this.new_tag_type] = _this.new_tag_ranges
-          _this.content['available_tags'][_this.new_tag_type] = new_available_tags
-          let notification = {
-            title: 'Set ' + intf_id + ' tag_range: Succeed',
-            description: 'For TAG type "' + _this.new_tag_type + '", a new tag_range was set: ' 
-                         + _this.new_tag_ranges,
-            icon: 'cog',
-          }
-          _this.$kytos.$emit("setNotification", notification)
-        })
-        _request.fail(function(data) {
-          let notification = {
-            title: 'Set ' + intf_id + ' tag_range: Succeed',
-            description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "tag_ranges" change was successful '
-                         + 'but there was an error obtaining the resized "available_tags". Try refreshing the page.',
-            icon: 'cog',
-          }
-          _this.$kytos.$emit("setNotification", notification)
-        })
-      });
-      request.fail(function(data) {
-        let notification = {
-          title: 'Set ' + intf_id + ' tag_range: Failed',
-          description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "tag_ranges" was not set.',
+          title: 'Set ' + intf_id + ' tag_range: Succeed',
+          description: 'For TAG type "' + _this.new_tag_type + '", a new tag_range was set: ' 
+                       + _this.new_tag_ranges,
           icon: 'cog',
         }
         _this.$kytos.$emit("setNotification", notification)
-      });
-    },
-    get_tag_types: function() {
-      let _result = [
-        {value: "vlan", description: "vlan", selected: true},
-        {value: "vlan_qinq", description: "vlan_qinq"},
-        {value: "mpls", description: "mpls"},
-      ];
-      return _result;
-    },
-    get_tag_ranges_endpoint: function() {
-      var _this = this
-      if(this.content === undefined) return
-      let request = $.ajax({
-                       type: "GET",
-                       url: this.$kytos_server_api + "kytos/topology/v3/interfaces/"
-                              + this.metadata.interface_id + "/tag_ranges",
-                       async: true
       })
-      request.done(function(data) {
-        _this.content['tag_ranges'] = data[_this.metadata.interface_id]['tag_ranges']
-        _this.content['available_tags'] = data[_this.metadata.interface_id]['available_tags']
-        _this.tag_ranges = _this.content.tag_ranges
-        _this.available_tags = _this.content.available_tags
+      _request.fail(function(data) {
+        let notification = {
+          title: 'Set ' + intf_id + ' tag_range: Succeed',
+          description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "tag_ranges" change was successful '
+                       + 'but there was an error obtaining the resized "available_tags". Try refreshing the page.',
+          icon: 'cog',
+        }
+        _this.$kytos.$emit("setNotification", notification)
       })
-    },
-    get_tag_ranges_content: function() {
-      if(this.content === undefined) return
-      this.tag_ranges = this.content.tag_ranges
-      this.available_tags = this.content.available_tags
-    },
-  },
-  mounted () {
-    this.update_interface_content()
-    this.update_chart()
-    this.update_content_switch()
-    this.interval = setInterval(this.update_chart, 60000)
-    this.get_metadata()
-    this.get_next_state()
-    this.get_tag_ranges_endpoint()
-  },
-  beforeUnmount () {
-    clearInterval(this.interval)
-  },
-  watch: {
-    content () {
-      if (this.content) {
-        this.update_interface_content()
-        this.update_chart()
-        this.update_content_switch()
-        this.get_metadata()
-        this.get_next_state()
-        this.get_tag_ranges_content()
+    });
+    request.fail(function(data) {
+      let notification = {
+        title: 'Set ' + intf_id + ' tag_range: Failed',
+        description: data.status + ': ' + ( data.responseJSON !== undefined ? data.responseJSON.description : data.responseText ) + ' "tag_ranges" was not set.',
+        icon: 'cog',
       }
+      _this.$kytos.$emit("setNotification", notification)
+    });
+  },
+  get_tag_types: function() {
+    let _result = [
+      {value: "vlan", description: "vlan", selected: true},
+      {value: "vlan_qinq", description: "vlan_qinq"},
+      {value: "mpls", description: "mpls"},
+    ];
+    return _result;
+  },
+  get_tag_ranges_endpoint: function() {
+    var _this = this
+    if(this.content === undefined) return
+    let request = $.ajax({
+                     type: "GET",
+                     url: this.$kytos_server_api + "kytos/topology/v3/interfaces/"
+                            + this.metadata.interface_id + "/tag_ranges",
+                     async: true
+    })
+    request.done(function(data) {
+      _this.content['tag_ranges'] = data[_this.metadata.interface_id]['tag_ranges']
+      _this.content['available_tags'] = data[_this.metadata.interface_id]['available_tags']
+      _this.tag_ranges = _this.content.tag_ranges
+      _this.available_tags = _this.content.available_tags
+    })
+  },
+  get_tag_ranges_content: function() {
+    if(this.content === undefined) return
+    this.tag_ranges = this.content.tag_ranges
+    this.available_tags = this.content.available_tags
+  },
+},
+mounted () {
+  this.update_interface_content()
+  this.update_chart()
+  this.update_content_switch()
+  this.interval = setInterval(this.update_chart, 60000)
+  this.get_metadata()
+  this.get_next_state()
+  this.get_tag_ranges_endpoint()
+},
+beforeUnmount () {
+  clearInterval(this.interval)
+},
+watch: {
+  content () {
+    if (this.content) {
+      this.update_interface_content()
+      this.update_chart()
+      this.update_content_switch()
+      this.get_metadata()
+      this.get_next_state()
+      this.get_tag_ranges_content()
     }
   }
+}
 }
 </script>
 <style lang="sass">
@@ -432,8 +444,8 @@ export default {
   background: #313131
 
 .metadata_table tbody tr:hover
-    color: #eee
-    background-color: #666
+  color: #eee
+  background-color: #666
 
 .metadata_container 
   width: 100%

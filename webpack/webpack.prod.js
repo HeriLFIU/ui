@@ -10,6 +10,8 @@ module.exports = merge(common,{
   // http://vue-loader.vuejs.org/en/workflow/production.html
   plugins: [
     new webpack.DefinePlugin({
+      PRODUCTION: JSON.stringify(true),
+      DEVELOPMENT: JSON.stringify(false),
       'process.env': {
         NODE_ENV: '"production"'
       },

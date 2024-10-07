@@ -7,6 +7,12 @@ var webpack = require('webpack')
 module.exports = merge(common,{
   mode: 'development',
   devtool: 'eval-source-map',
+  plugins: [
+    new webpack.DefinePlugin({
+      DEVELOPMENT: JSON.stringify(true),
+      PRODUCTION: JSON.stringify(false)
+    })
+  ],
   devServer: {
     hot: true,
     historyApiFallback: true,

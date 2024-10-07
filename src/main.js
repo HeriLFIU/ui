@@ -5,7 +5,8 @@ import VueHotkey from 'v-hotkey3'
 import App from './App.vue'
 import * as packageInfo from '../package.json';
 import eventBus from './event-bus'
-import { toRaw } from 'vue';
+import { toRaw } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
 const {version} = packageInfo;
 
@@ -73,6 +74,7 @@ import { library, dom } from "@fortawesome/fontawesome-svg-core";
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { fab } from '@fortawesome/free-brands-svg-icons';
 import { far } from '@fortawesome/free-regular-svg-icons';
+
 library.add(fas, far, fab)
 dom.watch();
 
@@ -119,11 +121,31 @@ kytos.component('k-chart-radar', KytosChartRadar)
 kytos.component('k-table', KytosTable)
 kytos.component('k-notification', KytosNotification)
 
+if (DEVELOPMENT){
+  // kytos.component('mef-eline', defineAsyncComponent(() =>
+  //   import('./components/dev/napps/mefeline')
+  // ))
+  // kytos.component('telemetry-int', defineAsyncComponent(() =>
+  //   import('./components/MyComponent.vue')
+  // ))
+  // kytos.component('pathfinder', defineAsyncComponent(() =>
+  //   import('./components/MyComponent.vue')
+  // ))
+  // kytos.component('maintenance', defineAsyncComponent(() =>
+  //   import('./components/MyComponent.vue')
+  // ))
+  // kytos.component('sdntrace-cp', defineAsyncComponent(() =>
+  //   import('./components/MyComponent.vue')
+  // ))
+  kytos.component('sdntrace', defineAsyncComponent(() =>
+    import('./components/dev/napps/sdntrace/k-toolbar/main.kytos')
+  ))
+}
 
 // Preserve extra whitespaces
 kytos.config.compilerOptions.whitespace = 'preserve';
 
-kytos.config.globalProperties.$kytos = new Vue()
+kytos.config.globalProperties.$kytos = kytos
 kytos.config.globalProperties.$kytos_server = window.kytos_server
 kytos.config.globalProperties.$kytos_server_api =  window.kytos_server_api
 kytos.config.globalProperties.$kytos_version = version
