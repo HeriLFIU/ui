@@ -424,51 +424,51 @@ watch: {
   overflow-y: auto
 
 .metadata_table table
-display: table
-width: 100%
+  display: table
+  width: 100%
 
 .metadata_table thead
-font-weight: bold
-background: #554077
+  font-weight: bold
+  background: #554077
 
 .metadata_table th
-padding: 0.6em 0 0.6em 0
+  padding: 0.6em 0 0.6em 0
 
 .metadata_table td
-vertical-align: middle
-padding: 0.45em 0 0.45em 0
-word-break: break-all
-line-height: 20px
+  vertical-align: middle
+  padding: 0.45em 0 0.45em 0
+  word-break: break-all
+  line-height: 20px
 
 .metadata_table tbody tr:nth-child(even)
-background: #313131
+  background: #313131
 
 .metadata_table tbody tr:hover
   color: #eee
   background-color: #666
 
 .metadata_container 
-width: 100%
-display: flex
-justify-content: center
+  width: 100%
+  display: flex
+  justify-content: center
 
 .metadata_container .k-button
-width: 150px
+  width: 150px
 
 .button_container
-display: flex
-justify-content: space-between
+  display: flex
+  justify-content: space-between
 
 .metric .k-dropdown
-height: 20px
-width: 100%
-overflow: hidden
-display: flex
-flex-wrap: wrap
+  height: 20px
+  width: 100%
+  overflow: hidden
+  display: flex
+  flex-wrap: wrap
 
 .metric .k-dropdown__title
-width: 15%
+  width: 15%
 
 .metric .k-dropdown__select
-width: 82%
+  width: 82%
 </style>
