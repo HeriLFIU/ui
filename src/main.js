@@ -137,8 +137,11 @@ if (DEVELOPMENT){
   // kytos.component('sdntrace-cp', defineAsyncComponent(() =>
   //   import('./components/MyComponent.vue')
   // ))
-  kytos.component('sdntrace', defineAsyncComponent(() =>
-    import('./components/dev/napps/sdntrace/k-toolbar/main.kytos')
+  kytos.component('topology-link-info', defineAsyncComponent(() =>
+    import('./components/dev/napps/topology/k-info-panel/link_info.kytos')
+  ))
+  kytos.component('topology-switch-info', defineAsyncComponent(() =>
+    import('./components/dev/napps/topology/k-info-panel/switch_info.kytos')
   ))
 }
 
