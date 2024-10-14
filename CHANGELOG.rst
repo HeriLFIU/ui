@@ -6,6 +6,15 @@ All notable changes to the Kytos-NG UI project will be documented in this file.
 UNRELEASED - Under development
 ******************************
 
+Added
+=====
+- Added new "k-modal" component.
+- Added confirmation modal when enabling/disabling interfaces
+
+Changed
+=======
+- Fixed Enter key handler on InputAutocomplete (k-input-auto)
+
 [2024.1.0] - 2024-08-16
 ***********************
 
