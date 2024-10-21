@@ -25,11 +25,13 @@ export default {
         cache: false,
         success: function(data) {
           if(data) {
-            self.components = self.components.concat(data)
+            // self.components = self.components.concat(data)
+            // self.components = {name: 'goober'}
+            console.log(data)
           }
         }
       }).always(function(){
-          self.load_components()
+          // self.load_components()
       })
   },
   methods: {

@@ -1,14 +1,13 @@
 <template>
   <div class="tab">
-    <input class="k-accordion-input" :id="id" type="checkbox" name="tabs" 
-      :checked="checked"
+    <input class="k-accordion-input" :id="id" type="checkbox" name="tabs" :checked="checked"
       @input="checked = $event.target.checked" />
-    <label class="k-accordion-label" :for="id">{{title}}</label>
+    <label class="k-accordion-label" :for="id">{{ title }}</label>
     <div class="tab-content">
-     <!-- @slot Empty Pannel, please define some items inside. -->
-    <slot>
-       <p>Empty Pannel created, please define some items inside.</p>
-    </slot>
+      <!-- @slot Empty Pannel, please define some items inside. -->
+      <slot>
+        <p>Empty Pannel created, please define some items inside.</p>
+      </slot>
     </div>
   </div>
 </template>
@@ -35,7 +34,7 @@ import KytosBaseWithIcon from '../base/KytosBaseWithIcon';
 export default {
   name: 'k-accordion-item',
   mixins: [KytosBaseWithIcon],
-  props:{
+  props: {
     /**
     * Boolean value to represent whether the accordion item is checked.
     */

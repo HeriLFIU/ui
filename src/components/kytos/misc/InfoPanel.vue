@@ -10,6 +10,7 @@
                   tooltip="Close Info-Panel"
                   @click="this.hide">
         </k-button>
+        hello
       </div>
     </div>
     <div class="k-info-title">
@@ -92,8 +93,12 @@ export default {
      *                         }
      */
     show(content) {
+      console.log(content)
       this.lastContent = content
       this.infoPanelView = content.component
+      console.log(this.infoPanelView)
+      console.log(content.content)
+      console.log(content.component)
       this.content = content.content
       this.myTitle = content.title
       this.mySubtitle = content.subtitle

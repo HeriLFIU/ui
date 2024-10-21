@@ -1,0 +1,268 @@
+<template>
+  <k-toolbar-item icon="gear" tooltip="Maintenace">
+    <k-accordion>
+      <k-accordion-item title = "Create Maintenance Window" :key = "componentKey">
+        <k-input placeholder = "Description" v-model:value = "description"></k-input>
+        <k-input placeholder = "Start time" v-model:value = "start"></k-input>
+        <k-input placeholder = "End time" v-model:value = "end"></k-input>
+
+        <k-select icon = "link" title = "List of Switches"
+          :options = "dpid_names" v-model:value = "switches">
+        </k-select>
+
+        <k-select icon = "link" title = "List of Interfaces"
+          :options = "interface_names" v-model:value = "interfaces">
+        </k-select>
+
+        <k-select icon = "link" title = "List of Links"
+          :options = "link_names" v-model:value = "links">
+        </k-select>
+
+        <k-checkbox title = "Force" v-model:model = "checked_list" :value = "'force'">
+        </k-checkbox>
+        <p></p>
+
+        <k-button title="Reset Fields" @click="forceRenderer"></k-button>
+        <k-button title="Create Maintenance Window" @click="post_window"></k-button>
+      </k-accordion-item>
+      <k-accordion-item title="List Maintenance Windows">
+        <k-button tooltip="Maintenance Windows"
+          title="List Maintenance Windows"
+          icon="desktop"
+          @click="list_windows">
+        </k-button>
+      </k-accordion-item>
+    </k-accordion>
+  </k-toolbar-item>
+</template>
+
+<script>
+    module.exports = {
+        methods: {
+            /*
+                Shows the maintenance windows in the k-info-panel.
+            */
+            list_windows: function() {
+                var _this = this
+                this.hideInfoPanel()
+                // Show the info panel after 50ms.
+                setTimeout(function() {
+                    _this.showInfoPanel()
+                }, 50)
+            },
+            /*
+                Hides the k-info-panel.
+            */
+            hideInfoPanel: function() {
+                this.$kytos.eventBus.$emit("hideInfoPanel")
+            },
+            /*
+                Shows the k-info-panel.
+            */
+            showInfoPanel: function() {
+                let listWindows = {
+                    "component": 'kytos-maintenance-k-info-panel-list_maintenance',
+                    "content": {},
+                    "icon": "desktop",
+                    "title": "View Windows",
+                    "subtitle": "by kytos/Maintenance"
+                }
+                this.$kytos.eventBus.$emit("showInfoPanel", listWindows)
+            },
+            /*
+                Gets the data fields after button click and consumes POST api to post maintenace window.
+            */
+            post_window: function() {
+                var self = this
+                filteredLinks = []
+                filteredSwitches = []
+                filteredInterfaces = []
+                
+                // For every chosen link
+                for(item of this.links) {
+                    // If the link is not a string
+                    if(typeof(item) != "string") {
+                        // Skip it.
+                        continue
+                    }
+                    // Otherwise, add the link id to the list of links.
+                    filteredLinks.push(item)
+                }
+                // For every chosen switch
+                for(item of this.switches) {
+                    // If the switch is not a string
+                    if(typeof(item) != "string") {
+                        // Skip it.
+                        continue
+                    }
+                    // Otherwise, add the switch id to the list of items.
+                    filteredSwitches.push(item)
+                }
+                // For every chosen interface
+                for(item of this.interfaces) {
+                    // If the interface is not a string
+                    if(typeof(item) != "string") {
+                        // Skip it.
+                        continue
+                    }
+                    // Otherwise, add the interface id to the list of links.
+                    filteredInterfaces.push(item)
+                }
+
+                var request = $.ajax({
+                    async: true,
+                    dataType: "json",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({"description": self.description,
+                                          "start": self.start,
+                                          "end": self.end,
+                                          "switches": filteredSwitches,
+                                          "links": filteredLinks,
+                                          "interfaces": filteredInterfaces,
+                                          "force": self.checked_list.includes("force"),
+                    }),
+                    url:this.$kytos_server_api + "kytos/maintenance/v1",
+                });
+
+                request.done(function(data) {
+                    let notification = {
+                        icon: 'gear',
+                        title: 'Maintenance Window Created',
+                        description: 'Maintenance Window with id ' + data.mw_id + ' was created.'
+                    }
+                    self.$kytos.eventBus.$emit("setNotification", notification);
+                    // Clearing fields if POST is a success
+                    self.forceRenderer();
+                }),
+                request.fail(function(jqXHR, status, error) {
+
+                    error_message = JSON.parse(jqXHR.responseText)
+                    if (error_message.hasOwnProperty('response')) {
+                        error_message = error_message.response
+                    } else if (error_message.hasOwnProperty('description')) {
+                        error_message = error_message.description
+                    }
+                    if(error_message.includes('%Y-%m-%dT%H:%M:%S%z') || (error_message.includes('start')) || (error_message.includes('past'))){
+                        error_message += '. Remember that the actual format for time is YYY-MM-DDTHH:MM:SS-0000, for example, 2026-04-22T11:41:01-0000'
+                    }
+                    let notification = {
+                        icon: 'gear',
+                        title: 'Maintenance Window not created',
+                        description: 'Maintenance Window was not created. Error: ' + error_message
+                    }
+                   self.$kytos.eventBus.$emit("setNotification", notification);
+                })
+            },
+            /*
+                Gets the Switch and Interface information using the GET api call from topology. 
+            */
+            loadNames: function() {
+                let _dpid_names = [];
+                let _interface_names = [];
+                var _this = this;
+
+                var request = $.ajax({
+                    url: this.$kytos_server_api + "kytos/topology/v3/switches",
+                    type: "GET",
+                    data: JSON.stringify(),
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8"
+               });
+
+               request.done(function(data) {
+                   let switches = data.switches;
+                   $.each(switches, function(i, sw) {
+                       if(sw.metadata.node_name){
+                           _dpid_names.push({"value": sw.id, "description": sw.metadata.node_name})
+                       }
+                       else{
+                           _dpid_names.push({"value": sw.id, "description": sw.id})
+                       }
+                       if(sw.interfaces){
+                           $.each(sw.interfaces, function(j, interface){
+                           if(!interface.metadata.port_name){
+                               _interface_names.push({"value": interface.id, "description": interface.id})
+                           }
+                           else{
+                               _interface_names.push({"value": interface.id, "description": interface.metadata.port_name})
+                           }
+                           });
+                      }
+                  });
+                  _this.dpid_names = _dpid_names;
+                  _this.interface_names = _interface_names;
+              });
+
+              request.fail(function( jqXHR, textStatus ) {
+                  alert("Request failed: " + textStatus);
+              });
+            },  
+            /*
+                Gets the Link information using the Get api call from the topology api.
+            */
+            loadLinks: function(){
+                let _link_names = [];
+                var _this = this;
+                var request = $.ajax({
+                    url: this.$kytos_server_api + "kytos/topology/v3/links",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json"
+                });
+                request.done(function(data) {
+                    let links = data.links;
+                    $.each(links, function(i, li) {
+                        if(li.metadata.link_name){
+                            _link_names.push({"value": li.id, "description": li.metadata.link_name})
+                        }
+                        else{
+                            _link_names.push({"value": li.id, "description": li.id})
+                        }
+                    });
+                    _this.link_names = _link_names;
+                });
+               request.fail(function( jqXHR, textStatus) {
+                   alert("Request failed: " + textStatus)
+               });
+            },
+           /*
+                This method clears all fields and makes them empty.
+           */
+           forceRenderer: function() {
+              this.description = "";
+              this.start =  "";
+              this.end =  "";
+              this.status = "";
+              this.switches = [];
+              this.interfaces = [];
+              this.links = [];
+              this.checked_list = [];
+              this.componentKey +=1;
+           }
+        },
+        data() {
+            return{
+                description: "",
+                start: "",
+                end: "",
+                switches: [],
+                interfaces: [],
+                status: "",
+                dpid_names: [],
+                interface_names: [],
+                link_names: [],
+                links: [],
+                checked_list: [],
+                componentKey: "",
+           }
+       },
+       mounted(){
+           Promise.all([this.loadNames(), this.loadLinks()])
+           .then(function() {
+                    // Finished loading links, switches, and interfaces.
+            })
+       }
+    }
+</script>
+

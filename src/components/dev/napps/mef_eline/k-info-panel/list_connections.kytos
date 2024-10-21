@@ -1,0 +1,404 @@
+<template>
+    <div v-if="component_key > 0">
+      <div class="mef_container">
+        <div class="mef-table no-compact">
+          <div class="mef-table-divisor">
+            <table id="mef-table-list-circuit" class="table mef-table-list-circuit">
+              <thead>
+                <tr>
+                  <template v-for="(header, index) in data_headers">
+                    <th scope="col" v-if="header == 'id'">#</th>
+                    <th scope="col" class="header" @click="defineSort(index)" v-else>
+                      {{ header }}
+                      <span class="order-dir" v-if="currentSort === index">
+                        {{ spanDir(index) }}
+                      </span>
+                    </th>
+                  </template>
+                </tr>
+                <tr class="header-filter">
+                  <template v-for="(header, index) in data_header_id">
+                    <th scope="col" v-if="header == 'mef_dpid_id'"></th>
+                    <th scope="col" v-else>
+                      <input :id="header + '_search'" v-model="search_cols[header]"
+                        tooltip="DPID"
+                        v-if="!(['mef_lst_enabled', 'mef_lst_active'].includes(header))">
+                      </input>
+                    </th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, rindex) in rowsOfPage"
+                  v-bind:class="{ inactive: !row['mef_lst_active'] }"
+                  @click="rowClicked(row['mef_dpid_id'])">
+                  <th scope="row" style="width: 45px">{{ rindex + 1 }}</th>
+                  <template v-for="(column, cindex) in row"> 
+                    <td v-if="cindex != 'mef_dpid_id'">
+                      <template v-if="cindex == 'mef_lst_enabled' || cindex == 'mef_lst_active'">
+                        <i class="material-icons" style="color:green" 
+                          v-if="column">done</i>
+                        <i class="material-icons" style="color:#c00000" 
+                          v-else>close</i>
+                      </template>
+                      <template v-else>{{ column }}</template>
+                    </td>
+                  </template>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <div class="mef_container">
+        <p class='empty-con-list' v-if="flag_loading">Loading EVCs. Please wait...</p>
+        <p class='empty-con-list' v-else>No EVCs Installed.<br>
+          Close this info-panel and try again, please.</p>
+        </div>
+    </div>
+</template>
+
+<script>
+module.exports = {
+  data(){
+    return {
+      flag_loading: false,
+      component_key: 0,
+      search_cols: [], 
+      data_header_id:  ['mef_dpid_id', 'mef_lst_name', 
+                      'mef_lst_sw_a', 'mef_lst_prt_a', 'mef_lst_int_a', 'mef_lst_tag_a',
+                      'mef_lst_sw_z', 'mef_lst_prt_z', 'mef_lst_int_z', 'mef_lst_tag_z', 
+                      'mef_lst_enabled',
+                      'mef_lst_active'],                         
+      data_headers: ['id', 'Name', 'Switch A', 'Port A', 'Interf. A', 'VLAN A',
+                      'Switch Z', 'Port Z', 'Interf. Z', 'VLAN Z',
+                      'Enabled', 'Active'],
+      data_rows: [],
+      currentSort: 0,
+      currentSortDir: [],
+      dpid_names: {},  // DPIDs names
+      interface_names: {} // DPIDs and interface data and metadata
+    }
+  },
+  methods: {
+    defineSort: function(newSort) {
+      /**
+      * Identify the direction of the sort for
+      * the selected column as sort base
+      */
+      if(newSort === this.currentSort) {
+        let sortDir = (this.currentSortDir[newSort] === 'asc') ? 'desc' : 'asc'
+        this.$set(this.currentSortDir, newSort, sortDir);
+        /**
+        * It is necessary to use a different syntax to replace arrays values
+        * by index because Vue cannot detect when directly set an item with
+        * the index like it is usually done. In this case should've been:
+        * this.currentSortDir[newSort] = sortDir;
+        */
+      }
+      this.currentSort = newSort;
+    },
+    spanDir(index) {
+      /**
+      * Defines a span marker only for the selected
+      * column to indicate its sort direction
+      */
+      if (this.currentSortDir[index] === 'desc')
+        return '▾';
+      return '▴';
+    },
+    rowClicked: function(id) {
+      /**
+      * Action triggered with a click in a list item
+      */
+      this.openCircuit(id);
+    },
+    openCircuit: function(id) {
+      /**
+      * Open the circuit detail in another panel.
+      */
+      var content = {
+        "component": 'kytos-mef_eline-k-info-panel-show_circuit',
+        "content": {'id':id},
+        "icon": "gear",
+        "maximized": true,
+        "title": "Circuit Details",
+        "subtitle": "by kytos/mef_eline"
+      }
+      this.$kytos.eventBus.$emit("showInfoPanel", content);
+    },
+    forceRerender: function() {
+      /**
+       * Force Vue to re-render the view.
+       */
+      this.component_key += 1;
+    },
+    listEVCs: function() {
+      /**
+       * Call mef_eline REST endpoint to load EVC list.
+       */
+      this.component_key = 0;
+      var tableRows = [];
+      var _this = this;
+
+      var request = $.ajax({
+        url: this.$kytos_server_api + "kytos/mef_eline/v2/evc/",
+        type:"GET",
+        data: JSON.stringify(),
+        dataType: "json",
+        contentType: "application/json; charset=utf-8"
+      });
+      request.done(function(data) {
+        $.each(data, function(i , evc) {
+          if (evc) {
+            let endpoint_a =  (evc.uni_a) ? evc.uni_a.interface_id : "";
+            let endpoint_data_a = _this.getEndpointData(endpoint_a);
+            let tag_a = (evc.uni_a && evc.uni_a.tag) ? evc.uni_a.tag.value : "";
+
+            let endpoint_z =  (evc.uni_z) ? evc.uni_z.interface_id : "";
+            let endpoint_data_z = _this.getEndpointData(endpoint_z);
+            let tag_z = (evc.uni_z && evc.uni_z.tag) ? evc.uni_z.tag.value : "";  
+
+            let connection = {
+              "mef_dpid_id": evc.id,
+              "mef_lst_name": evc.name,
+              "mef_lst_sw_a": endpoint_data_a.node_name,
+              "mef_lst_prt_a": '' + endpoint_data_a.port,
+              "mef_lst_int_a": endpoint_data_a.interface_name,
+              "mef_lst_tag_a": tag_a, // TAG Vlan to be sorted as int
+              "mef_lst_sw_z": endpoint_data_z.node_name,
+              "mef_lst_prt_z": '' + endpoint_data_z.port,
+              "mef_lst_int_z": endpoint_data_z.interface_name,
+              "mef_lst_tag_z": tag_z, // TAG Vlan to be sorted as int
+              "mef_lst_enabled": evc.enabled,
+              "mef_lst_active": evc.active
+            };
+            tableRows.push(connection);
+          }
+        });
+
+        _this.data_rows = tableRows;
+        _this.forceRerender();
+      });
+
+      request.fail(function( jqXHR, textStatus ) {
+        alert( "Request failed: " + textStatus );
+      });
+      
+      return tableRows;
+    },
+    loadDpidNames: async function() {
+      /**
+      * Call REST endpoint with switch and interface attributes and metadata.
+      */
+      var _this = this;
+      return new Promise((resolve, reject) => {
+          $.ajax({
+          url: this.$kytos_server_api + "kytos/topology/v3/switches",
+          type:"GET",
+          data: JSON.stringify(),
+          dataType: "json",
+          contentType: "application/json; charset=utf-8",
+          success: function(data){
+            let _dpid_names = {};
+            let _interface_names = {};
+            let switches = data.switches;
+            $.each(switches, function(i , sw) {
+              if(sw.metadata.node_name) {
+                _dpid_names[sw.dpid] = sw.metadata.node_name;
+              }
+              if(sw.interfaces) {
+                $.each(sw.interfaces, function(j , interface) {
+                  _interface_names[interface.id] = interface.name;
+                });
+              }
+            });
+            _this.dpid_names = _dpid_names
+            _this.interface_names = _interface_names;
+            resolve()
+          },
+          error: function(jqXHR, textStatus){
+            alert( "Request failed: " + textStatus );
+            reject()
+          }
+        });
+      })
+    },
+    getEndpointData: function(endpoint) {
+      /**
+      * Get DPID and Interface attributes and metadata.
+      * Parameter: <switch>:<port>
+      */
+      let dpid = endpoint.substring(0, 23);
+      let port = endpoint.substring(24);
+      let interface_name = (endpoint in this.interface_names) ? this.interface_names[endpoint] : port;
+      let node_name = (dpid in this.dpid_names) ? this.dpid_names[dpid] : dpid
+      return {
+        "dpid": dpid,
+        "node_name": node_name,
+        "port": port,
+        "interface_name": interface_name
+      };
+    },
+    initialize: async function(){
+      this.flag_loading = true;
+        // Load DPID attributes and metadata
+      await this.loadDpidNames();
+        // Load EVCs
+      this.listEVCs();
+      this.flag_loading = false;
+    }
+  },
+  computed: {
+    rowsOfPage: function() {
+      /**
+       * Orders by ascendant or descendant of a
+       * selected column
+       */
+      // list all seach properties
+      let properties = Object.keys(this.search_cols);
+
+      let filtered = this.data_rows.filter((item)=>
+        {
+          // for every property check if search is not empty and item[prop] has search[prop]
+          // Cast to string to search VLAN numbers
+          let checks = properties.map(i => 
+            !this.search_cols[i] || 
+            item[i].toString().toUpperCase().includes(this.search_cols[i].toString().toUpperCase())
+          );
+          // check if no property is false
+          return !checks.includes(false);
+        }
+      );
+
+      return filtered.sort((a, b) => {
+        let modifier = 1,
+            key_a = Object.keys(a),
+            key_b = Object.keys(b);
+        if(this.currentSortDir[this.currentSort] === 'desc')
+          modifier = -1;
+        if(a[key_a[this.currentSort]] < b[key_b[this.currentSort]])
+          return -1 * modifier;
+        if(a[key_a[this.currentSort]] > b[key_b[this.currentSort]])
+          return modifier;
+        return 0;
+      });
+    },
+  },
+  created() {
+    this.initialize()
+    // Make the panel fill the screen except the left menu width
+    $('.k-info-panel:has(.mef_container)').addClass('mef-k-info-panel');
+
+    // Initialize list sort direction
+    this.currentSortDir = Array(this.data_headers.length).fill('asc');
+
+    this.search_cols = this.data_header_id.reduce((obj, item) => (obj[item] = "", obj), {});
+  },
+  mounted() {
+    // Make the panel fill the screen except the left menu width
+    this.$parent.$el.style.width = "calc(100% - 300px)";
+    if (JSON.parse(localStorage.getItem('mef_eline/k-info-panel/list_connections/search_cols'))) {
+      this.search_cols = JSON.parse(localStorage.getItem('mef_eline/k-info-panel/list_connections/search_cols'));
+    }
+  },
+  unmounted() {
+    $('.k-info-panel').removeClass('mef-k-info-panel');
+  },
+  watch: {
+    search_cols: {
+      handler: function() {
+        localStorage.setItem('mef_eline/k-info-panel/list_connections/search_cols', JSON.stringify(this.search_cols))
+      },
+      deep: true
+    }
+  }
+}
+</script>
+
+<style>
+/* Import icons */
+@import "https://fonts.googleapis.com/icon?family=Material+Icons";
+
+.mef-k-info-panel {
+  width: calc(100% - 300px);
+}
+
+.mef_container .empty-con-list {
+  margin-top: 10px;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.mef-table {
+  color: #ccc;
+  max-height: 250px;
+  text-align: center;
+  margin: 0 auto;
+  display: block;
+  padding: 0.5em 0 1em 0.3em;
+  font-size: .8em;
+  height: 190px;
+}
+.mef-table table {
+  display: table;
+  width: 100%;
+}
+.mef-table thead {
+  font-weight: bold;
+  background: #554077;
+}
+.mef-table th {
+  padding: 0.6em 0 0.6em  0;
+}
+.mef-table tr {
+  color: lightgray;
+}
+.mef-table td {
+  vertical-align: middle;
+}
+.mef-table .header {
+  cursor: pointer;
+}
+.mef-table .header-filter th {
+  padding: 0 0 0.5em 0;
+  background: #554077;
+}
+.mef-table .header-filter input {
+  background: lightgray;
+  border: 1px solid gray;
+  border-radius: 3px;
+  font-size: 0.9em;
+  margin: 0 0.2em 0 0.2em;
+}
+.mef-table tbody tr:nth-child(even) {
+  background: #313131;
+}
+.mef-table tbody tr.inactive {
+  background-color: #600000;
+}
+.mef-table-divisor {
+  height: 190px;
+}
+.mef-table-list-circuit tbody tr:hover {
+    color: #eee;
+    background-color: #666;
+}
+#mef_lst_prt_a_search,
+#mef_lst_prt_z_search,
+#mef_lst_tag_a_search,
+#mef_lst_tag_z_search {
+  width: 4em;
+}
+
+.mef_container .order-dir {
+  display: inline-block;
+  width: 12px;
+}
+
+.k-info-panel-max:has(.mef_container) {
+  width: calc(100% - 305px) !important; /* overrides the width of the parent panel if it loads the mef_eline container */
+}
+</style>

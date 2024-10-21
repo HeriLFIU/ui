@@ -24,13 +24,14 @@
 import KytosBase from '../base/KytosBase'
 import KytosBaseWithIcon from '../base/KytosBaseWithIcon'
 
-if (DEVELOPMENT){
-  var dev_components = [{'icon': 'link', 'name': 'mef-eline'}, {'icon': 'chart-line', 'name': 'telemetry-int'}, 
-  {'icon': 'compass', 'name': 'pathfinder'}, {'icon': 'gear', 'name': 'maintenance'}, 
-  {'icon': 'search-location', 'name': 'sdntrace-cp'}, {'icon': 'map-marker', 'name': 'sdntrace'}]
-} else {
-  var dev_components = []
-}
+// if (DEVELOPMENT){
+//   var dev_components = [{'icon': 'link', 'name': 'mef-eline'}, {'icon': 'chart-line', 'name': 'telemetry-int'}, 
+//   {'icon': 'compass', 'name': 'pathfinder'}, {'icon': 'gear', 'name': 'maintenance'}, 
+//   {'icon': 'search-location', 'name': 'sdntrace-cp'}, {'icon': 'map-marker', 'name': 'sdntrace'}]
+// } else {
+//   var dev_components = []
+// }
+var dev_components = []
 
 export default {
   name: 'k-menu-bar',

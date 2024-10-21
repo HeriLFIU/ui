@@ -10,6 +10,30 @@ import { defineAsyncComponent } from 'vue'
 
 const {version} = packageInfo;
 
+import { loadModule } from "vue3-sfc-loader";
+
+const options = {
+
+  moduleCache: {
+    vue: Vue
+  },
+
+  getFile(url) {
+
+    return fetch(url).then(response => response.ok ? response.text() : Promise.reject(response));
+  },
+
+  addStyle(styleStr) {
+
+    const style = document.createElement('style');
+    style.textContent = styleStr;
+    const ref = document.head.getElementsByTagName('style')[0] || null;
+    document.head.insertBefore(style, ref);
+  }
+
+}
+
+
 const kytos = createApp({
   el: '#app',
   render: () => Vue.h(App),
@@ -123,30 +147,46 @@ kytos.component('k-chart-radar', KytosChartRadar)
 kytos.component('k-table', KytosTable)
 kytos.component('k-notification', KytosNotification)
 
-if (DEVELOPMENT){
-  // kytos.component('mef-eline', defineAsyncComponent(() =>
-  //   import('./components/dev/napps/mefeline')
-  // ))
-  // kytos.component('telemetry-int', defineAsyncComponent(() =>
-  //   import('./components/MyComponent.vue')
-  // ))
-  // kytos.component('pathfinder', defineAsyncComponent(() =>
-  //   import('./components/MyComponent.vue')
-  // ))
-  // kytos.component('maintenance', defineAsyncComponent(() =>
-  //   import('./components/MyComponent.vue')
-  // ))
-  // kytos.component('sdntrace-cp', defineAsyncComponent(() =>
-  //   import('./components/MyComponent.vue')
-  // ))
-  kytos.component('topology-link-info', defineAsyncComponent(() =>
-    import('./components/dev/napps/topology/k-info-panel/link_info.kytos')
-  ))
-  kytos.component('topology-switch-info', defineAsyncComponent(() =>
-    import('./components/dev/napps/topology/k-info-panel/switch_info.kytos')
-  ))
-}
+// if (DEVELOPMENT){
+//   // kytos.component('mef-eline', defineAsyncComponent(() =>
+//   //   import('./components/dev/napps/mefeline')
+//   // ))
+//   // kytos.component('telemetry-int', defineAsyncComponent(() =>
+//   //   import('./components/MyComponent.vue')
+//   // ))
+//   // kytos.component('pathfinder', defineAsyncComponent(() =>
+//   //   import('./components/MyComponent.vue')
+//   // ))
+//   // kytos.component('maintenance', defineAsyncComponent(() =>
+//   //   import('./components/MyComponent.vue')
+//   // ))
+//   // kytos.component('sdntrace-cp', defineAsyncComponent(() =>
+//   //   import('./components/MyComponent.vue')
+//   // ))
+//   kytos.component('topology-link-info', defineAsyncComponent(() =>
+//     import('./components/dev/napps/topology/k-info-panel/link_info.kytos')
+//   ))
+//   kytos.component('goober', defineAsyncComponent(() =>
+//     import('./components/dev/napps/topology/k-info-panel/switch_info.kytos')
+//   ))
+//   kytos.component('topology-search-switch', defineAsyncComponent(() =>
+//     import('./components/dev/napps/topology/k-action-menu/search_switch.kytos')
+//   ))
+//   kytos.component('sdntrace', defineAsyncComponent(() =>
+//     import('./components/dev/napps/sdntrace/k-toolbar/main.kytos')
+//   ))
+//   kytos.component('amlight-sdntrace-k-info-panel-show_all_traces', defineAsyncComponent(() =>
+//     import('./components/dev/napps/sdntrace/k-info-panel/show_all_traces.kytos')
+//   ))
+//   ))
+// }
 
+// console.log(loadModule('http://localhost:8181/ui/amlight/sdntrace_cp/k-toolbar/main.vue', options))
+// kytos.component('component', Vue.defineAsyncComponent( () => loadModule('http://localhost:8181/ui/amlight/sdntrace_cp/k-toolbar/main.vue', options) ))
+
+kytos.component('kytos-mef_eline-k-toolbar-main', defineAsyncComponent(() =>
+    import('./components/dev/napps/mef_eline/k-toolbar/main.kytos')
+))
 // Preserve extra whitespaces
 kytos.config.compilerOptions.whitespace = 'preserve';
 

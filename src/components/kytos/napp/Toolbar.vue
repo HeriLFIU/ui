@@ -2,7 +2,7 @@
  <div class='k-toolbar' >
   <component v-show="active == (index+1)"
              v-for="(component, index) in inner_components"
-             :is="component.name"
+             :is='component.name'
              v-bind:key="component.name">
   </component>
  </div>
@@ -11,6 +11,28 @@
 <script>
 import Vue from 'vue'
 import httpVueLoader from "./httpVueLoader.js"
+import { loadModule } from "vue3-sfc-loader"
+
+const options = {
+
+  moduleCache: {
+    vue: Vue
+  },
+
+  getFile(url) {
+
+    return fetch(url).then(response => response.ok ? response.text() : Promise.reject(response));
+  },
+
+  addStyle(styleStr) {
+
+    const style = document.createElement('style');
+    style.textContent = styleStr;
+    const ref = document.head.getElementsByTagName('style')[0] || null;
+    document.head.insertBefore(style, ref);
+  }
+
+}
 
 export default {
   name: 'k-toolbar',
@@ -33,7 +55,9 @@ export default {
         async: true,
         cache: false,
         success: function(data) {
+          console.log(data)
           self.inner_components = self.inner_components.concat(data);
+          console.log(self.inner_components)
         }
       }).always(function(){
           self.load_components()
@@ -55,8 +79,8 @@ export default {
       $.each(self.inner_components, function(index, component){
         if('url' in component){
           // random is needed to avoid cache of components.
-          var url = self.$kytos_server+component.url+"?random="+Math.random()
-          Vue.component(component.name, httpVueLoader(url))
+          var url = self.$kytos_server+component.url
+          self.$kytos.component(component.name, Vue.defineAsyncComponent( () => loadModule(url, options) ))
         }
       })
     }

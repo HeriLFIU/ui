@@ -36,6 +36,10 @@ downloadUI(){
                 jq -r '.[] | select(.type=="file") | .download_url'); do
             wget $url -P $napp_dir/${napps[$1]}/k-info-panel
         done
+                for url in $(curl -s https://api.github.com/repos/kytos-ng/${napps[$1]}/contents/ui/k-action-menu | \
+                jq -r '.[] | select(.type=="file") | .download_url'); do
+            wget $url -P $napp_dir/${napps[$1]}/k-action-menu
+        done
         echo -e "Download was successful!\n"
     fi
 }

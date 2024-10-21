@@ -2,8 +2,8 @@
   <k-toolbar-item icon="link" tooltip="Mef-Eline">
     <div class="scroll">
       <k-accordion>
-        <form id="mef_eline_toolbar_form" onsubmit="event.preventDefault();">
         <k-accordion-item title="Request E-Line Circuit">
+        <form id="mef_eline_toolbar_form" onsubmit="event.preventDefault();">
            <k-input id="name-input" v-model:value="circuit_name"
                     title="Circuit Name:" tooltip="Circuit name"
                     placeholder="Circuit Name" icon="pencil"></k-input>
@@ -64,6 +64,7 @@
            <k-checkbox title="Enable INT" v-model:model="enable_int" :value="'enable'"
                        tooltip="Enable In-band Network Telemetry (INT)"
            ></k-checkbox>
+          </form>
         </k-accordion-item>
 
         <span v-for="constraint in ['primary_constraints', 'secondary_constraints']">
@@ -216,7 +217,6 @@
                      icon="plug" @click="viewPanel">
             </k-button>
         </k-accordion-item>
-        </form>
       </k-accordion>
     </div>
   </k-toolbar-item>
@@ -608,6 +608,7 @@ module.exports = {
     },
   },
   mounted() { // when the Vue app is booted up, this is run automatically.
+    console.log(this.$refs)
     this.fetch_dpids();
     this.load_topology();
     this.init_path_constraints();

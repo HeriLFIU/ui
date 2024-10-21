@@ -1,0 +1,1067 @@
+<template>
+    <div class="mef_circuit_container">
+      <div class="mef-buttons">
+        <div class="mef-buttons-left">
+          <div class="mef-back-button">
+            <k-button tooltip="List installed EVCs" title="< Back to list" @click="showInfoPanel">
+            </k-button>
+          </div>
+        </div>
+        <div class="mef-buttons-right">
+          <div class="mef-save-button">
+            <k-button tooltip="Save EVC" title="Save EVC" @click="saveEvc">
+            </k-button>
+          </div>
+          <div class="mef-delete-button">
+            <k-button tooltip="Delete EVC" title="Delete EVC" @click="showModalDeleteEvc">
+            </k-button>
+          </div>
+        </div>
+      </div>
+      <div v-if="flag_loading == false" class="mef-table no-compact">
+        <div class="mef-circuit-table">
+         <table class="table">
+            <template v-for="(column, cindex) in basics"> 
+              <tr>
+                <th>{{cindex}}</th>
+                <td>
+                  <k-input v-if="column.editable" :id="column.name" v-model:value="column.value"></k-input>
+                  <span v-else>
+                    {{column.value}}
+                  </span>
+                </td>
+              </tr>
+            </template>
+          </table>
+        </div>
+        <div class="mef-circuit-table" id="mef-flags">
+         <table class="table">
+            <template v-for="(column, cindex) in flags"> 
+              <tr><th>{{cindex}}</th>
+              <td>
+                <template v-if="column.editable">
+                  <div class="k-button-wrapper compact" @click="column.value = column.value?false:true;">
+                    <button :title="column.value" class="k-button compact">
+                      <i class="material-icons check_true" v-if="column.value">done</i>
+                      <i class="material-icons check_false" v-else>close</i>
+                    </button>
+                  </div>
+                </template>
+                <template v-else>
+                  <i class="material-icons check_true" v-if="column.value">done</i>
+                  <i class="material-icons check_false" v-else>close</i>
+                </template>
+              </td></tr>
+            </template>
+          </table>
+        </div>
+        <div class="mef-circuit-table">
+         <table class="table">
+            <template v-for="(column, cindex) in others"> 
+              <tr>
+                <th>{{cindex}}</th>
+                <td>
+                  <k-input v-if="column.editable" :id="column.name" v-model:value="column.value"></k-input>
+                  <span v-else-if="column.editable === false">
+                    {{column.value}}
+                  </span>
+                  <k-dropdown v-else-if="column.name === 'queue_id'" :options="queue_options(column)"
+                   v-model:value="column.value">
+                  </k-dropdown>
+                </td>
+              </tr>
+            </template>
+          </table>
+        </div>
+        <div class="mef-circuit-table">
+         <table class="table">
+            <template v-for="(column, cindex) in dates"> 
+              <tr><th>{{cindex}}</th><td>{{column}}</td></tr>
+            </template>
+          </table>
+        </div>
+
+        <div class="mef-circuit-table" id="mef-unis">
+         <table class="table">
+            <tbody>
+              <tr>
+                <th></th>
+                <th>UNI A</th>
+                <th>UNI Z</th>
+              </tr>
+              <template v-for="(data, cindex) in endpoints_data">
+                <tr>
+                  <th>{{cindex}}</th>
+                  <template v-for="col in data">
+                    <td>
+                      <k-input-auto
+                        v-model:value="col.value"
+                        title="col.name"
+                        :candidates="dpids"
+                        @focus="loadDpidNames"
+                        @blur="onblur_dpid">
+                      </k-input-auto>
+                    </td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <template v-for="(path, pindex) in paths">
+          <div class="mef-circuit-table mef-circuit-table-path">
+            <table class="table">
+              <tbody>
+                <tr>
+                  <th>{{pindex}}</th>
+                  <td v-if="path && path.length > 0">
+                    <template v-for="step in path">
+                      <table class="mef-path-table">
+                        <tr>
+                          <th></th><th>Endpoint A</th><th>Endpoint B</th>
+                        </tr>
+                        <template v-for="(attr, cindex) in step">
+                          <tr>
+                            <th>{{cindex}}</th><td>{{attr[0]}}</td><td>{{attr[1]}}</td>
+                          </tr>
+                        </template>
+                      </table>
+                    </template>
+                </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <template  v-for="(p_constraint, p_constraint_index) in constraints">
+          <div class="mef-circuit-table mef-circuit-table-constraints">
+            <table class="table">
+              <tbody>
+              <th>{{constraint_labels[p_constraint_index]}}</th>
+              <tr><td>
+                <div>
+                  <table class="table">
+                    <tr><th>{{constraint_labels['undesired_links']}}</th></tr>
+                    <tr>
+                    <td>
+                      <k-select :options="get_link_options()"
+                      v-model:value=p_constraint.undesired_links>
+                      </k-select>
+                    </td>
+                    </tr>
+                  </table>
+                </div>
+
+                  <div>
+                    <table class="table" id="mef-constraints-spf">
+                      <tr>
+                        <th>{{constraint_labels['spf_attribute']}}</th>
+                        <td> 
+                          <k-dropdown :options="get_spf_attribute_options(p_constraint_index)" 
+                           v-model:value=p_constraint.spf_attribute></k-dropdown>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>{{constraint_labels['spf_max_path_cost']}}</th>
+                        <td>
+                          <k-input v-model:value=p_constraint.spf_max_path_cost></k-input>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <span :title=constraint_descriptions.minimum_flexible_hits>
+                            {{constraint_labels['minimum_flexible_hits']}}
+                          </span>
+                        </th>
+                        <td>
+                          <k-input v-model:value=p_constraint.minimum_flexible_hits></k-input>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div style="
+                      float: left;
+                      width: 250px;">
+                    <table class="table">
+                      <tr><th>{{constraint_labels['mandatory_metrics']}}</th>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div>
+                            <table class="table" style="">
+                              <template v-for="(metric_attr, metric_index) in p_constraint.mandatory_metrics">
+                                <tr>
+                                  <th>{{constraint_labels["flexible_metrics."+metric_index]}}</th>
+                                  <td style="padding:0 5px;">
+                                    <k-input v-model:value="p_constraint.mandatory_metrics[metric_index]"></k-input>
+                                  </td>
+                                </tr>
+                              </template>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div style="
+                      float: left;
+                      margin-left: 10px;
+                      width: 250px;">
+                    <table class="table">
+                      <tr>
+                        <th>{{constraint_labels['flexible_metrics']}}</th>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div>
+                            <template v-for="(metric_attr, metric_index) in p_constraint.flexible_metrics">
+                              <tr>
+                                <th>{{constraint_labels["flexible_metrics."+metric_index]}}</th>
+                                <td style="padding:0 5px;">
+                                  <k-input v-model:value="p_constraint.flexible_metrics[metric_index]"></k-input>
+                                </td>
+                              </tr>
+                            </template>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+              </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+      <div v-else class="loading">
+        <p>Loading EVC</p>
+      </div>
+      <div class="mef-bottom-buttons">
+        <k-button tooltip="List installed EVCs" title="< Back to list" @click="showInfoPanel">
+        </k-button>
+        <k-button tooltip="Redeploy EVC" title="Redeploy EVC" @click="redeployEvc">
+        </k-button>
+      </div>
+      <k-modal
+        message="Delete EVC?"
+        button-title="Delete"
+        :action="deleteEVC"
+        v-model:show-modal="showDelModal">
+      </k-modal>
+    </div>
+    
+</template>
+<script>
+module.exports = {
+  props: {
+    content: {
+      type: Object,
+      required: true,
+    },
+  },
+  data(){
+    return {
+        flag_loading: false,
+        component_key: 0,
+        circuit: {},  // EVC data
+        dpids: [],  // DPIDs - used for autocomplete
+        dpid_names: {},  // DPIDs names
+        interface_data: {},  // DPIDs and interface data and metadata
+        endpoints_data: {}, // EVC endpoints data
+        basics: {}, // EVC basic data
+        flags: {}, // EVC flags data
+        others: {}, // EVC others data
+        dates: {}, // EVC dates
+        paths: {}, // EVC paths data
+        links: {}, // EVC links data
+        circuit_scheduler: {}, // EVC scheduler data
+        showDelModal: false,
+        TAG_TYPE_VLAN: "vlan", // Tag type VLAN
+
+        constraints: {}, // constraint data
+        constraint_labels: {}, // constraint labels
+        constraint_descriptions: {}, // constraint mouse over description
+        link_options: [], // constraint link dropdown options
+        form_constraints: {}, // constraint data vue object synchronization
+    }
+  },
+  methods: {
+    queue_options: function(queue) {
+      let _result = [
+        {value: -1, description:"default", selected: (queue.value == -1)},
+        {value: null, description:"none", selected: (queue.value == null)}
+      ]
+      for (let i = 0; i < 8; i++) {
+        _result.push(
+          {value: i, description: i.toString(), selected: (queue.value == i)}
+        )
+      }
+      return _result
+    },
+    get_spf_attribute_options: function(type) {
+      /**
+       * Method to build option items for spf attribute.
+       * @parameter type primary_constraints or secondary_constraints
+       */
+      let _spf = this.form_constraints[type].spf_attribute;
+      if(this.form_constraints[type].spf_attribute == '') {
+        _spf = this.constraints[type].spf_attribute;
+      }
+      let _result = [
+        {value: null, description: "default", selected: (_spf == undefined || _spf == '' || _spf == null)},
+        {value: "hop", description: "hop", selected: (_spf == 'hop')},
+        {value: "delay", description: "delay", selected: (_spf == 'delay')},
+        {value: "priority", description: "priority", selected: (_spf == 'priority')},
+      ];
+      return _result;
+    },
+    get_link_options: function(){
+      /**
+       * Build option items for constraint (desired/undesired) link.
+       */
+      let _this = this;
+      let _result = [];
+
+      if (this.link_options) {
+        $.each(this.link_options, function(key, item){
+          let _item = {};
+          _item.value = item.value;
+          _item.description = item.description;
+          _result.push(_item);
+        });
+      }
+      return _result;
+    },
+    showInfoPanel: function() {
+      let listConnections = {
+          component: 'kytos-mef_eline-k-info-panel-list_connections',
+          content: {},
+          icon: "desktop",
+          maximized: true,
+          title: "View Connections",
+          subtitle: "by kytos/mef_eline"
+      }
+      this.$kytos.eventBus.$emit("showInfoPanel", listConnections);
+    },
+    showModalDeleteEvc: function() {
+      /**
+       * Show modal window do delete circuit.
+       */
+      this.showDelModal = true;
+    },
+    forceRerender: function() {
+      /**
+       * Force Vue to re-render the view.
+       */
+      this.component_key += 1;
+    },
+    loadEVC: function(id) {
+      /**
+       * Call mef_eline REST endpoint to load EVC data.
+       */
+      this.component_key = 0;
+      var _this = this;
+
+      var request = $.ajax({
+        url: this.$kytos_server_api + "kytos/mef_eline/v2/evc/" + id,
+        type:"GET",
+        data: JSON.stringify(),
+        dataType: "json",
+        contentType: "application/json; charset=utf-8"
+      });
+      
+      request.done(function(data) {
+        _this.buidEvcView(data);
+        _this.forceRerender();
+      });
+      request.fail(function( jqXHR, textStatus ) {
+        let notification = {
+            title: 'Error loading EVC.',
+            description: "Request failed: " + textStatus
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+      });
+    },
+    deleteEVC: function() {
+      /**
+       * Call mef_eline REST endpoint to delete EVC data.
+       */
+      var id = this.circuit['id'];
+      var _this = this;
+
+      var request = $.ajax({
+        url: this.$kytos_server_api + "kytos/mef_eline/v2/evc/" + id,
+        type:"DELETE"
+      });
+      request.done(function(data) {
+        // Go back
+        _this.showInfoPanel();
+      });
+      request.fail(function( jqXHR, textStatus ) {
+        let notification = {
+            title: 'Error deleting EVC.',
+            description: "Request failed: " + textStatus
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+      });
+    },
+    load_topology(){
+      var _this = this;
+
+      $.ajax({
+        async: true,
+        dataType: "json",
+        url: this.$kytos_server_api + "kytos/topology/v3",
+
+        success: function(data) {
+          let _link = data['topology']['links']
+          _this.link_options = [];
+
+          $.each(_link, function(key, value){
+            if (value.metadata.link_name !== undefined && value.metadata.link_name.length !== 0){
+              _this.link_options.push({value:value.id, description:value.metadata.link_name})
+            } else {
+              _this.link_options.push({value:value.id, description:value.id});
+            }
+          });
+        }
+      });
+    },
+    onblur_dpid: function() {
+      /**
+       * Update dpid values on event onblur triggered in dpids fields.
+       * It split the value selected from autocomplete list.
+       * It is expected the value as "NAME - DPID".
+       **/
+      let dpid_a = this.endpoints_data["DPID"][0]["value"];
+      if(dpid_a.lastIndexOf(' ') > 0) {
+        let splitted_dpid = dpid_a.split(' ');
+        this.endpoints_data["Interface"][0]["value"] = splitted_dpid[0];
+        this.endpoints_data["DPID"][0]["value"] = splitted_dpid[2];
+      }
+      
+      let dpid_z = this.endpoints_data["DPID"][1]["value"];
+      if(dpid_z.lastIndexOf(' ') > 0) {
+        let splitted_dpid = dpid_z.split(' ');
+        this.endpoints_data["Interface"][1]["value"] = splitted_dpid[0];
+        this.endpoints_data["DPID"][1]["value"] = splitted_dpid[2];
+      }
+    },
+    buidEvcView: function(data) {
+      /**
+      * Build new EVC object for exibition.
+      * Parameter: 
+      *   data: evc json from mef_eline
+      */
+      this.circuit = data;
+
+      let uni_a = this.circuit['uni_a']['interface_id'];
+      let uni_a_data = this.getEndpointData(uni_a);
+      let uni_z = this.circuit['uni_z']['interface_id'];
+      let uni_z_data = this.getEndpointData(uni_z);
+
+      this.endpoints_data = {
+        'DPID': [
+         {'value': uni_a, 'editable':true, 'name':'uni_a'}, 
+         {'value': uni_z, 'editable':true, 'name':'uni_z'}],
+        'Node': [ 
+         {'value': uni_a_data['node_name']}, 
+         {'value': uni_z_data['node_name']}],
+        'Interface': [ 
+         {'value': uni_a_data['interface_name']}, 
+         {'value': uni_z_data['interface_name']}],
+        'Port':[ 
+         {'value': uni_a_data['port_name']}, 
+         {'value': uni_z_data['port_name']}]
+      };
+
+      // Tag is optional, but can be edited
+      let tag_a = {'value': this.circuit['uni_a']['tag'] ? JSON.stringify(this.circuit['uni_a']['tag']['value']) : "", 
+                   'editable':true, 
+                   'name':'tag_a'};
+      let tag_z = {'value': this.circuit['uni_z']['tag'] ? JSON.stringify(this.circuit['uni_z']['tag']['value']) : "", 
+                   'editable':true, 
+                  'name':'tag_z'};
+      this.endpoints_data['VLAN'] = [tag_a, tag_z];
+
+      this.basics = {'ID': {'value': data['id'], 'editable':false},
+                     'Name': {'value': data['name'], 'editable':true, 'name':'name'}
+                    };
+      this.flags = {'Enabled': {'value': data['enabled']?true:false, 'editable':true},
+                    'Active': {'value': data['active']?true:false, 'editable':false},
+                    'Archived': {'value': data['archived']?true:false, 'editable':false},
+                    'Dynamic backup path': {'value': data['dynamic_backup_path']?true:false, 'editable':true}
+                   };
+      this.others = {'Owner': {'value': data['owner'], 'editable':false},
+                     'Southbound priority': {'value': data['sb_priority'], 'editable':true, 'name':'sb_priority'},
+                     'Bandwidth': {'value': data['bandwidth'], 'editable':true, 'name':'bandwidth'},
+                     'Queue': {'value': data['queue_id'], 'name':'queue_id'},
+                     'Service level': {'value': data['service_level'], 'editable':true, 'name':'service_level'}
+                    };
+      this.dates = {'Request time': data['request_time'],
+                    'Creation time': data['creation_time'],
+                    'Start date': data['start_date'],
+                    'End date': data['end_date']
+                   };
+      this.paths = {"Current path": this.buildPathView(data['current_path']),
+                    "Primary path": this.buildPathView(data['primary_path']),
+                    "Backup path": this.buildPathView(data['backup_path'])
+                   };
+
+      this.links = {"Primary links": data['primary_links'],
+                    "Backup links": data['backup_links']
+                   };
+      
+      this.circuit_scheduler = data['circuit_scheduler'];
+
+      this.constraints = {
+        'primary_constraints': this.buildPathConstraintsView(data['primary_constraints']),
+        'secondary_constraints': this.buildPathConstraintsView(data['secondary_constraints']),
+      };
+    },
+    buildPathView: function(path_data) {
+      /**
+      * Build path data for exibition. (current, primary and backup paths)
+      * Parameter:
+      *   path_data: json with path data
+      */
+      let _path = [];
+      if(path_data) {
+        for(key_path in path_data) {
+          let path_step = path_data[key_path];
+
+          let svlan = ('metadata' in path_step && 's_vlan' in path_step['metadata']) ?
+                       path_step['metadata']['s_vlan']['value'] : "";
+
+          let dpid_a = path_step['endpoint_a']['id'];
+          let data_a = this.getEndpointData(dpid_a);
+
+          let dpid_b = path_step['endpoint_b']['id'];
+          data_b = this.getEndpointData(dpid_b);
+          let _item = {
+            'DPID': [dpid_a, dpid_b],
+            'Node': [data_a['node_name'], data_b['node_name']],
+            'Interface': [data_a['interface_name'], data_b['interface_name']],
+            'Port': [data_a['port_name'], data_b['port_name']],
+            'Link': [data_a['link_name'], data_b['link_name']],
+            'S-VLAN': [svlan, svlan]
+          };
+          _path.push(_item);
+        }
+      }
+      return _path;
+    },
+    loadDpidNames: async function() {
+      /**
+      * Call REST endpoint with switch and interface attributes and metadata.
+      */
+      var _this = this;
+      return new Promise((resolve, reject) => {
+          $.ajax({
+          url: this.$kytos_server_api + "kytos/topology/v3/switches",
+          type:"GET",
+          data: JSON.stringify(),
+          dataType: "json",
+          contentType: "application/json; charset=utf-8",
+          success: function(data){
+            let _dpid_names = {};
+            let _interface_data = {};
+            let switches = data.switches;
+            $.each(switches, function(i , sw) {
+              if(sw.metadata.node_name) {
+                _dpid_names[sw.dpid] = sw.metadata.node_name;
+              }
+              if(sw.interfaces) {
+                $.each(sw.interfaces, function(j , interface) {
+                  // store interface name data 
+                  let metadata = interface.metadata;
+                  _interface_data[interface.id] = {
+                    "name": interface.name,
+                    "link_name": (metadata && "link_name" in metadata) ? interface.metadata.link_name : "",
+                    "port_name": (metadata && "port_name" in metadata) ? interface.metadata.port_name : ""
+                  };
+                  // store autocomplete dpids
+                  let value = interface.id;
+                  if(interface.name) {
+                    value = interface.name + " - " + value;
+                  }
+                  if(!_this.dpids.includes(value)) {
+                    _this.dpids.push(value);
+                  }
+                });
+              }
+            });
+            _this.dpids.sort();
+            _this.dpid_names = _dpid_names;
+            _this.interface_data = _interface_data;
+            resolve()
+          },
+          error: function(jqXHR, textStatus){
+            let notification = {
+              title: 'Error loading EVC names.',
+              description: "Request failed: " + textStatus
+            }
+            _this.$kytos.eventBus.$emit("setNotification" , notification);
+            reject()
+          }
+        });
+      })
+    },
+
+    buildPathConstraintsView: function(data) {
+      /**
+      * Build path constraint data for exibition 
+      * (primary and secondary constraints paths).
+      * Parameter:
+      *   constraints_data: json with path constraint data
+      */
+      this.constraint_labels = {
+        'primary_constraints': 'Primary Constraints',
+        'secondary_constraints': 'Secondary Constraints',
+        'undesired_links': 'Undesired links',
+        'spf_attribute': 'SPF attribute',
+        'spf_max_path_cost': 'SPF max path cost',
+        'minimum_flexible_hits': 'Min. flexible hits',
+        'mandatory_metrics': 'Mandatory metrics',
+        'mandatory_metrics.bandwidth': 'Bandwidth',
+        'mandatory_metrics.utilization': 'Utilization',
+        'mandatory_metrics.priority': 'Priority',
+        'mandatory_metrics.delay': 'Delay',
+        'mandatory_metrics.reliability': 'Reliability',
+        'mandatory_metrics.ownership': 'Ownership',
+        'mandatory_metrics.not_wnership': 'Not ownership',
+        'flexible_metrics': 'Flexible metrics',
+        'flexible_metrics.bandwidth': 'Bandwidth',
+        'flexible_metrics.utilization': 'Utilization',
+        'flexible_metrics.priority': 'Priority',
+        'flexible_metrics.delay': 'Delay',
+        'flexible_metrics.reliability': 'Reliability',
+        'flexible_metrics.ownership': 'Ownership',
+        'flexible_metrics.not_ownership': 'Not ownership',
+      };
+
+      let _constraint = {};
+      if(data) {
+        _constraint = {
+          'undesired_links': data['undesired_links'],
+          'spf_attribute': data['spf_attribute'],
+          'spf_max_path_cost': data['spf_max_path_cost'],
+          'minimum_flexible_hits': data['minimum_flexible_hits'],
+        };
+        
+        if(data['mandatory_metrics']) {
+          _constraint.mandatory_metrics = {
+            'bandwidth': data['mandatory_metrics']['bandwidth'],
+            'utilization': data['mandatory_metrics']['utilization'],
+            'priority': data['mandatory_metrics']['priority'],
+            'delay': data['mandatory_metrics']['delay'],
+            'reliability': data['mandatory_metrics']['reliability'],
+            'ownership': data['mandatory_metrics']['ownership'],
+            'not_ownership': JSON.stringify(data['mandatory_metrics']['not_ownership']),
+          };
+        } else {
+          _constraint.mandatory_metrics = {
+            'bandwidth': '', 'utilization': '', 'priority': '',
+            'delay': '', 'reliability': '', 'ownership': '',
+            'not_ownership': [],
+          };
+        } 
+        if(data['flexible_metrics']) {
+          _constraint.flexible_metrics = {
+            'bandwidth': data['flexible_metrics']['bandwidth'],
+            'utilization': data['flexible_metrics']['utilization'],
+            'priority': data['flexible_metrics']['priority'],
+            'delay': data['flexible_metrics']['delay'],
+            'reliability': data['flexible_metrics']['reliability'],
+            'ownership': data['flexible_metrics']['ownership'],
+            'not_ownership': JSON.stringify(data['flexible_metrics']['not_ownership']),
+          };
+        } else {
+          _constraint.flexible_metrics = {
+            'bandwidth': '', 'utilization': '', 'priority': '',
+            'delay': '', 'reliability': '', 'ownership': '',
+            'not_ownership': [],
+          };
+        }
+
+        this.constraint_descriptions.minimum_flexible_hits = "Minimum number of attributes listed in flexible_metrics that a path will meet. minimum: 0 maximum: 6";
+      }
+
+      return _constraint;
+    },
+
+    getEndpointData: function(endpoint) {
+      /**
+      * Get DPID and Interface attributes and metadata.
+      * Parameter: <switch>:<port>
+      */
+      let dpid = endpoint.substring(0, 23);
+      let port = endpoint.substring(24);
+      let node_name = (dpid in this.dpid_names) ? this.dpid_names[dpid] : dpid;
+
+      let interface_name =  port;
+      let link_name = "";
+      let port_name = "";
+      if(endpoint in this.interface_data) {
+        let _data = this.interface_data[endpoint];
+        interface_name = _data["name"];
+        link_name = ("link_name" in _data) ? _data["link_name"] : "";
+        port_name = ("port_name" in _data) ? _data["port_name"] : "";
+      }
+      
+      let result = {
+        "dpid": dpid,
+        "node_name": node_name,
+        "port": port,
+        "interface_name": interface_name,
+        "link_name": link_name,
+        "port_name": port_name
+      };
+
+      return result;
+    },
+    redeployEvc: function() {
+      var _this = this;
+
+      let id = this.basics["ID"]["value"];
+      let name = this.basics["Name"]["value"];
+      var request = $.ajax({
+        url: this.$kytos_server_api + "kytos/mef_eline/v2/evc/" + id + "/redeploy",
+        type:"PATCH",
+        contentType: "application/json; charset=utf-8"
+      });
+
+      request.done(function(data) {
+        let notification = {
+            title: 'EVC id: ' + id + ' | name: ' + name + ' redeployed.',
+            description: ""
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+      });
+      request.fail(function(data) {
+        let notification = {
+          title: 'Redeploy EVC failed',
+          description: 'Error redeploying EVC ' + id +'. ' + data.responseJSON.description
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+      });
+    },
+    saveEvc: function() {
+      /**
+      * Build a payload and save.
+      */
+      var _this = this;
+      let id = this.basics["ID"]["value"];
+      var parse_error = ""
+      let payload = {
+        name: this.basics["Name"]["value"],
+        enabled: this.flags["Enabled"]["value"],
+        dynamic_backup_path: this.flags["Dynamic backup path"]["value"],                
+        sb_priority: parseInt(this.others["Southbound priority"]["value"]) || null,
+        bandwidth: parseInt(this.others["Bandwidth"]["value"]) || 0,
+        queue_id: parseInt(this.others["Queue"]["value"]),
+        service_level: parseInt(this.others["Service level"]["value"]) || 0,
+        uni_a: {
+          interface_id: this.endpoints_data["DPID"][0]["value"],
+        },
+        uni_z: {
+          interface_id: this.endpoints_data["DPID"][1]["value"],
+        },
+      };
+      
+      // Tag is optional
+      if(this.endpoints_data["VLAN"][0]["value"]) {
+        payload["uni_a"]["tag"] = {
+          tag_type: this.TAG_TYPE_VLAN,
+          value: JSON.parse(this.endpoints_data["VLAN"][0]["value"])
+        };
+      }
+      if(this.endpoints_data["VLAN"][1]["value"]) {
+        payload["uni_z"]["tag"] = {
+          tag_type: this.TAG_TYPE_VLAN,
+          value: JSON.parse(this.endpoints_data["VLAN"][1]["value"])
+        };
+      }
+
+      ['primary_constraints', 'secondary_constraints'].forEach(_type => {
+        let _constraint_payload = {}; 
+        // Dropdown forms
+        if(this.constraints[_type].undesired_links !== undefined && this.constraints[_type].undesired_links.length > 0) {
+          _constraint_payload.undesired_links = [].concat(
+            this.constraints[_type].undesired_links.filter(item => typeof(item) == "string")
+          );
+        }
+        if(this.constraints[_type].spf_attribute) {
+          _constraint_payload.spf_attribute = this.constraints[_type].spf_attribute;
+        }
+
+        // Input forms
+        if(this.constraints[_type].spf_max_path_cost !== undefined && this.constraints[_type].spf_max_path_cost !== "") {
+          _constraint_payload.spf_max_path_cost = parseInt(this.constraints[_type].spf_max_path_cost);
+        }
+        if(this.constraints[_type].minimum_flexible_hits !== undefined && this.constraints[_type].minimum_flexible_hits !== "") {
+          _constraint_payload.minimum_flexible_hits = parseInt(this.constraints[_type].minimum_flexible_hits);
+        }
+
+        ['mandatory_metrics', 'flexible_metrics'].forEach(_metric_type => {
+          if(this.constraints[_type][_metric_type] !== undefined) {
+            let metric = this.constraints[_type][_metric_type];
+            let _result_metrics = {};
+            ['bandwidth', 'utilization', 'priority', 'delay', 'reliability'].forEach(_m => {
+              if(metric[_m] !== undefined && metric[_m] !== '') {
+                _result_metrics[_m] = parseInt(metric[_m]);
+              } else {
+                //TODO: set the value to remove the metric (ex: 0, undefined, null, -1...)
+                  //_result_metrics[_m] = {};
+              }
+            });
+            if(metric['ownership'] !== undefined) { // can be empty
+              _result_metrics['ownership'] = metric['ownership'];
+            }
+            if(metric['not_ownership'] !== undefined && metric['not_ownership'] !== '') {
+              try{_result_metrics['not_ownership'] = JSON.parse(metric['not_ownership'])}
+              catch(e){
+                if (e instanceof SyntaxError){
+                  _result_metrics['not_ownership'] = metric['not_ownership']
+                  parse_error = " Detected error with " + metric['not_ownership'] + ", it could not be parsed."
+                }
+                else{
+                  throw e
+                }
+              }
+            }
+            if(!$.isEmptyObject(_result_metrics)) {
+              _constraint_payload[_metric_type] = _result_metrics;
+            } else {
+              _constraint_payload[_metric_type] = {};
+            }
+          }
+        });
+        payload[_type] = _constraint_payload;
+      });
+      $payload = payload;
+
+      var request = $.ajax({
+        url: this.$kytos_server_api + "kytos/mef_eline/v2/evc/" + id,
+        type:"PATCH",
+        data: JSON.stringify(payload),
+        contentType: "application/json; charset=utf-8"
+      });
+      request.done(function(data) {
+        let notification = {
+          title: 'EVC id: ' + data[id].id + ' | name: ' + data[id].name + ' updated.',
+          description: ''
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+        _this.loadEVC(_this.content.id);
+      });
+      request.fail(function(data) {
+        let notification = {
+          title: 'Update EVC failed',
+          description: 'Error updating EVC ' + id +'. ' + data.responseJSON.description + parse_error
+        }
+        _this.$kytos.eventBus.$emit("setNotification" , notification);
+      });
+    },
+    initialize: async function(){
+      this.flag_loading = true
+      // Load DPID attributes and metadata
+      await this.loadDpidNames();
+      // load topology links
+      this.load_topology();
+      this.loadEVC(this.content.id);
+      this.flag_loading = false
+    },
+  },
+  mounted() {
+    let _this = this;
+    if(this.content && this.content.id) {
+      // Load EVC
+      this.initialize();
+
+      // Make the panel fill the screen except the left menu width
+      $('.k-info-panel:has(.mef_circuit_container)').addClass('mef-k-info-panel');
+      
+      this.$kytos.dpids = this.dpids;
+    }
+    ['primary_constraints', 'secondary_constraints'].forEach( s => {
+        _this.form_constraints[s] = {
+          'undesired_links': [],
+          'spf_attribute': '',
+          'spf_max_path_cost': '',
+          'minimum_flexible_hits': '',
+          'mandatory_metrics': {
+            'bandwidth': '',
+            'utilization': '',
+            'priority': '',
+            'delay': '',
+            'reliability': '',
+            'ownership': '',
+            'not_ownership': [],
+          },
+          'flexible_metrics': {
+            'bandwidth': '',
+            'utilization': '',
+            'priority': '',
+            'delay': '',
+            'reliability': '',
+            'ownership': '',
+            'not_ownership': [],
+          }
+        };
+      });
+  },
+  unmounted() {
+    $('.k-info-panel').removeClass('mef-k-info-panel');
+  }
+}
+</script>
+<style>
+  /* Import icons */
+  @import "https://fonts.googleapis.com/icon?family=Material+Icons";
+  
+  .mef-k-info-panel {
+    width: calc(100% - 300px);
+  }
+  .empty-con-list {
+    margin-top: 10px;
+    color: #ccc;
+    font-size: 0.8rem;
+  }
+  .mef_circuit_container .check_true {
+    color: green;
+  }
+  .mef_circuit_container .check_false {
+    color: #c00000;
+  }
+  .mef_circuit_container .k-select {
+    font-size: 1em;
+  }
+  .mef_circuit_container .mef-buttons {
+    display: flow-root;
+  }
+  .mef-buttons .mef-buttons-left {
+    float: left;
+  }
+  .mef-buttons .mef-buttons-right {
+    float: right;
+    display: flex;
+  }
+  .mef-buttons .mef-delete-button button {
+    background: darkred;
+  }
+  .mef_circuit_container input {
+    text-align: center;
+    font-size: 1em;
+  }
+  .mef_circuit_container .k-select__select:hover * {
+    color: white;
+    background-color: #515151;
+  }
+  .mef_circuit_container input:focus {
+    border: 1px solid blueviolet;
+  }
+  .mef_circuit_container input:hover {
+    background: #515151;
+  }
+  .mef_circuit_container #k-input-wrap:hover {
+    background: #515151;
+  }
+  .mef_circuit_container .k-button-wrapper {
+    display: flex;
+    justify-content: center;
+    float: none;
+  }
+  .mef_circuit_container tbody tr:hover {
+    background: none;
+  }
+  .mef_circuit_container table {
+    border-collapse: collapse;
+    width: 100%;
+    
+  }
+  .mef_circuit_container tr:nth-child(even) {
+      background-color: #2d2d2d;
+  }
+  .mef_circuit_container td {
+      border-left: 1px solid darkgray;
+      padding: 5px;
+  }
+  .mef_circuit_container th {
+    background-color: #372C5E;
+    color: white;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    text-align: left;
+  }
+  .mef_circuit_container .loading {
+    margin-top: 10px;
+    color: #ccc;
+    font-size: 0.8rem;
+  }
+  .mef-circuit-table {
+      width: 250px;
+      float: left;
+      margin-left: 20px;
+      margin-bottom: 20px;
+  }
+  .mef-circuit-table tbody tr:hover {
+    background: none;
+  }
+  .mef-circuit-table th {
+    width: 75px;
+  }
+  .mef-path-table th {
+    width: 50px;
+  }
+  .mef-circuit-table table + table {
+    margin-top:4px;
+  }
+  .mef-circuit-table-constraints {
+    clear:both; 
+    width:540px;
+  }
+  .mef-circuit-table-constraints #mef-constraints-spf {
+    width: 400px;
+  }
+  .mef-circuit-table-constraints #mef-constraints-spf th {
+    width: 130px;
+  }
+  .mef-circuit-table-constraints select {
+    margin: 0;
+  }
+  .mef-bottom-buttons {
+    display: flex;
+    clear: both;
+    justify-content: space-between;
+  }
+  #mef-flags {
+    clear:both;
+  }
+  #mef-flags th {
+    width: 125px;
+  }
+  #mef-flags i {
+    /* icon size */
+    font-size: 1.1em;
+  }
+  #mef-unis {
+    clear:both;
+    width:520px;
+  }
+  .mef-circuit-table-path {
+    clear:both; 
+    width:540px;
+  }
+  #mef-unis .autocomplete-result-list {
+    width: 110% !important;
+    outline: 0;
+    border: 1px #515151 solid;
+    border-radius: 3px;
+  }
+  .autocomplete-result-list li {
+    white-space: nowrap;
+  }
+</style>
