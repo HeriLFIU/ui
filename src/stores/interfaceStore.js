@@ -43,6 +43,9 @@ export const useInterfaceStore = defineStore('interfaceData', {
                             );
                         delete this.interfaceChartData[switchID][portNum][size]
                             .updated_at;
+                        if (this.interfaceChartData[switchID][portNum].length > 7) {
+                            this.interfaceChartData[switchID][portNum].shift();
+                        }
                     });
                 });
             } catch (err) {
@@ -66,7 +69,7 @@ export const useInterfaceStore = defineStore('interfaceData', {
             this.updateData();
             this.pollingInterval = setInterval(() => {
                 this.updateData();
-            }, 50000);
+            }, 5000);
         },
         stopPolling() {
             if (this.pollingInterval) {
