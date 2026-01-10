@@ -67,7 +67,7 @@ export const useInterfaceStore = defineStore('interfaceData', {
             this.updateData();
             this.pollingInterval = setInterval(() => {
                 this.updateData();
-            }, 5000);
+            }, 50000);
         },
         stopPolling() {
             if (this.pollingInterval) {
