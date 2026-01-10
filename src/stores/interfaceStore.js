@@ -16,22 +16,20 @@ export const useInterfaceStore = defineStore('interfaceData', {
             try {
                 let url = this.kytos_server_api + 'amlight/kytos_stats/v1/port/stats';
                 const response = await this._this.$http.get(url);
+                let response_data = structuredClone(response.data);
                 if (Object.keys(this.interfaceChartData).length === 0) {
                     let data = structuredClone(response.data);
                     Object.keys(data).forEach((switchID) => {
                         Object.keys(data[switchID]).forEach((portNum) => {
-                            data = {
-                                ...data,
-                                [switchID]: { ...data[switchID], [portNum]: [] }
-                            };
+                            data[switchID][portNum] = [];
                         });
                     });
                     this.interfaceChartData = data;
                 }
-                Object.keys(response.data).forEach((switchID) => {
-                    Object.keys(response.data[switchID]).forEach((portNum) => {
+                Object.keys(response_data).forEach((switchID) => {
+                    Object.keys(response_data[switchID]).forEach((portNum) => {
                         this.interfaceChartData[switchID][portNum].push(
-                            response.data[switchID][portNum]
+                            response_data[switchID][portNum]
                         );
                         let size =
                             this.interfaceChartData[switchID][portNum].length - 1;
@@ -69,7 +67,7 @@ export const useInterfaceStore = defineStore('interfaceData', {
             this.updateData();
             this.pollingInterval = setInterval(() => {
                 this.updateData();
-            }, 50000);
+            }, 5000);
         },
         stopPolling() {
             if (this.pollingInterval) {
