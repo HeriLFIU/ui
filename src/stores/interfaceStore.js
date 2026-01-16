@@ -6,7 +6,8 @@ export const useInterfaceStore = defineStore('interfaceData', {
         _this: null,
         kytos_server_api: location.protocol + '//' + location.host + '/api/',
         interfaceChartData: {},
-        pollingInterval: null
+        pollingInterval: null,
+        isStale: false
     }),
     actions: {
         async updateData() {
@@ -46,6 +47,18 @@ export const useInterfaceStore = defineStore('interfaceData', {
                         }
                     });
                 });
+                let switches = Object.keys(this.interfaceChartData);
+                let ports = Object.keys(this.interfaceChartData[switches[0]]);
+                let array_size = this.interfaceChartData[switches[0]][ports[0]].length;
+                let first_switch_stats = this.interfaceChartData[switches[0]][ports[0]];
+                if (
+                    first_switch_stats[array_size - 1].timestamp.getTime() ===
+                    first_switch_stats[array_size - 2].timestamp.getTime()
+                ) {
+                    this.isStale = true;
+                } else {
+                    this.isStale = false;
+                }
             } catch (err) {
                 if (this._this.$http.isAxiosError(err)) {
                     http_helpers.post_error(

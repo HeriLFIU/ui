@@ -4,6 +4,7 @@
       <div class="usage" :class="utilization_color_class"></div>
       <div class="details" :title="mac">
         <div class="name">{{ name }} ({{ port_number }})</div>
+        <div v-if="isStale" class="name">Stale</div>
         <div class="x_bytes">
           <div class="padding-top-bottom"></div>
           <div class="tx_bytes">{{ $filters.humanize_bytes(tx_bytes) }} T&nbsp;</div>
@@ -103,12 +104,12 @@ export default {
       // Calculate highest interface utilization (tx or rx)
       let max_Bps = Math.max(this.tx_bytes, this.rx_bytes)
       let utilization = max_Bps / this.speed
-
+      if (this.isStale) return 'stale'
       if (utilization > 0.8) return 'high'
       if (utilization > 0.5) return 'medium'
       return 'low'
     },
-    ...mapState(useInterfaceStore, ['interfaceChartData'])
+    ...mapState(useInterfaceStore, ['interfaceChartData', 'isStale'])
   },
   methods: {
     open_interface() {
@@ -180,6 +181,8 @@ export default {
         background-color: dark-theme-variables.$kytos-yellow
       &.low
         background-color: dark-theme-variables.$kytos-green
+      &.stale
+        background-color: #C76E00
 
   .details
     flex-grow: 1
