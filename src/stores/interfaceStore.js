@@ -51,13 +51,15 @@ export const useInterfaceStore = defineStore('interfaceData', {
                 let ports = Object.keys(this.interfaceChartData[switches[0]]);
                 let array_size = this.interfaceChartData[switches[0]][ports[0]].length;
                 let first_switch_stats = this.interfaceChartData[switches[0]][ports[0]];
-                if (
-                    first_switch_stats[array_size - 1].timestamp.getTime() ===
-                    first_switch_stats[array_size - 2].timestamp.getTime()
-                ) {
-                    this.isStale = true;
-                } else {
-                    this.isStale = false;
+                if (first_switch_stats.length > 1) {
+                    if (
+                        first_switch_stats[array_size - 1].timestamp.getTime() ===
+                        first_switch_stats[array_size - 2].timestamp.getTime()
+                    ) {
+                        this.isStale = true;
+                    } else {
+                        this.isStale = false;
+                    }
                 }
             } catch (err) {
                 if (this._this.$http.isAxiosError(err)) {
@@ -80,7 +82,7 @@ export const useInterfaceStore = defineStore('interfaceData', {
             this.updateData();
             this.pollingInterval = setInterval(() => {
                 this.updateData();
-            }, 50000);
+            }, 60000);
         },
         stopPolling() {
             if (this.pollingInterval) {

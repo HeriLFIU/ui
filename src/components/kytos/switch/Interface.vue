@@ -4,9 +4,10 @@
       <div class="usage" :class="utilization_color_class"></div>
       <div class="details" :title="mac">
         <div class="name">{{ name }} ({{ port_number }})</div>
-        <div v-if="isStale" class="name">Stale</div>
         <div class="x_bytes">
           <div class="padding-top-bottom"></div>
+          <div v-if="isStale" class="stale_msg"> Stale Data &nbsp;</div>
+          <div class="padding-middle"></div>
           <div class="tx_bytes">{{ $filters.humanize_bytes(tx_bytes) }} T&nbsp;</div>
           <div class="padding-middle"></div>
           <div class="rx_bytes">{{ $filters.humanize_bytes(rx_bytes) }} R&nbsp;</div>
@@ -211,6 +212,10 @@ export default {
       justify-content: center
       align-items: flex-end
 
+      .stale_msg
+        color: #C76E00
+        flex: 4
+
       .tx_bytes
         color: #66FFFF
         flex: 4
@@ -237,6 +242,5 @@ export default {
   .chart
     min-width: 322px
     flex-grow: 10
-
 
 </style>
