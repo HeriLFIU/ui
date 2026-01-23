@@ -118,8 +118,8 @@ export default {
         let delta_tx = final.tx_bytes - initial.tx_bytes;
         let delta_rx = final.rx_bytes - initial.rx_bytes;
         let delta_time = final.timestamp.getTime() - initial.timestamp.getTime();
-        let bpsT = (delta_tx * 1000 * 8 / (delta_time)) || 0;
-        let bpsR = (delta_rx * 1000 * 8 / (delta_time)) || 0;
+        let bpsT = delta_time > 0 ? (delta_tx * 1000 * 8 / (delta_time)) : 0;
+        let bpsR = delta_time > 0 ? (delta_rx * 1000 * 8 / (delta_time)) : 0;
         let midpoint_time = new Date((final.timestamp.getTime() + initial.timestamp.getTime()) / 2);
         transformed_data.push({
           "timestamp": midpoint_time,

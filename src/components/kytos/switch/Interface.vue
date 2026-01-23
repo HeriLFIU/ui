@@ -139,8 +139,8 @@ export default {
           let delta_rx = data[last_index].rx_bytes - data[last_index - 1].rx_bytes;
           let delta_time_tx = data[last_index].timestamp.getTime() - data[last_index-1].timestamp.getTime();
           let delta_time_rx = data[last_index].timestamp.getTime() - data[last_index-1].timestamp.getTime();
-          this.tx_bytes = (Math.round(((delta_tx * 1000 * 8/(delta_time_tx)) + Number.EPSILON) * 100) / 100) || 0;
-          this.rx_bytes = (Math.round(((delta_rx * 1000 * 8/(delta_time_rx)) + Number.EPSILON) * 100) / 100) || 0;
+          this.tx_bytes = delta_time_tx > 0 ? (Math.round(((delta_tx * 1000 * 8/(delta_time_tx)) + Number.EPSILON) * 100) / 100) : 0;
+          this.rx_bytes = delta_time_rx > 0 ? (Math.round(((delta_rx * 1000 * 8/(delta_time_rx)) + Number.EPSILON) * 100) / 100) : 0;
         }
       },
       deep: true

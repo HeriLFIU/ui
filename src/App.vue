@@ -20,7 +20,6 @@
 <script>
 import { mapActions } from 'pinia';
 import { useInterfaceStore } from './stores/interfaceStore';
-import { thresholdSturges } from 'd3';
 
 export default {
   name: 'app',
