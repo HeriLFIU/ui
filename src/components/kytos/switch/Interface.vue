@@ -133,7 +133,7 @@ export default {
     chartJsonData: {
       handler: function (newVal) {
         let data = this.chartJsonData;
-        if (data.length > 1) {
+        if (data?.length > 1) {
           let last_index = data.length - 1;
           let delta_tx = data[last_index].tx_bytes - data[last_index - 1].tx_bytes;
           let delta_rx = data[last_index].rx_bytes - data[last_index - 1].rx_bytes;
