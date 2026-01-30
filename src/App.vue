@@ -38,6 +38,7 @@ export default {
       { value: 2, description: "Port Name" },
       { value: 3, description: "MAC Address" },
       ],
+      isStatsAvailable: false,
     }
 
   },
@@ -58,31 +59,37 @@ export default {
         });
       });
     },
+   async checkStatsAvailability() {
+      try {
+        const response = await this.$http.get(this.$kytos_server_api + "kytos/core/napps_enabled");
+        const kytos_stats = '["amlight","kytos_stats"]';
+        this.isStatsAvailable = response.data.napps.some(NApps => {
+          return JSON.stringify(NApps) === kytos_stats;
+        });
+      } catch (err) {
+        if (this.$http.isAxiosError(err)) {
+          http_helpers.post_error(
+            this,
+            err,
+            'Could not get the list of enabled napps'
+          );
+        } else {
+          throw err;
+        }
+      }
+    },
     ...mapActions(useInterfaceStore, ['startPolling', 'stopPolling'])
   },
   async mounted() {
-    try {
-      const response = await this.$http.get(this.$kytos_server_api + "kytos/core/napps_enabled");
-      let isStatsAvailable = response.data.napps.some(NApps => {
-        return NApps.includes("kytos_stats")
-      });
-      if (isStatsAvailable) {
-        this.startPolling(this);
-      }
-    } catch (err) {
-      if (this.$http.isAxiosError(err)) {
-        http_helpers.post_error(
-          this,
-          err,
-          'Could not get the list of enabled napps'
-        );
-      } else {
-        throw err;
-      }
+    await this.checkStatsAvailability();
+    if (this.isStatsAvailable) {
+      this.startPolling(this);
     }
   },
   unmounted() {
-    this.stopPolling();
+    if (this.isStatsAvailable) {
+      this.stopPolling();
+    }
   }
 
 }
