@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
+import { useInterfaceStore } from './stores/interfaceStore';
 
 export default {
   name: 'app',
@@ -55,9 +57,16 @@ export default {
             });
         });
       });
-
     },
+    ...mapActions(useInterfaceStore, ['startPolling', 'stopPolling'])
+  },
+  mounted () {
+    this.startPolling(this);
+  },
+  unmounted () {
+    this.stopPolling();
   }
+
 }
 </script>
 
