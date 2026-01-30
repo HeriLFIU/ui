@@ -68,7 +68,7 @@ export const useInterfaceStore = defineStore('interfaceData', {
                     http_helpers.post_error(
                         this._this,
                         err,
-                        'Could not reach links data'
+                        'Could not get port stats data'
                     );
                 } else {
                     throw err;
